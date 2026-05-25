@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  wave_config.wcfg
+
+  Default waveform layout for the Phase 1 tb_kvq_top simulation database.
+  Groups expose:
+    - Clock + reset
+    - AXIS request interface (tvalid/tready/tenant_id/opcode/request_id)
+    - AXIS response interface (tvalid/tready/status/deadline_miss/latency)
+    - Deadline arbiter selection + credit snapshot
+    - Per-tenant queue occupancy (8 tenants)
+    - AXI4-Lite control plane
+
+  Open in the XSim/Vivado GUI with:
+    xsim --gui tb_kvq_top -view sim/xsim/wave_config.wcfg
+  or load via File > Open Waveform Configuration once the .wdb is loaded.
+-->
+<wave_config>
+  <wave_state>
+    <user_settings>
+      <user_setting name="zoom_state" value="zoom_full"/>
+    </user_settings>
+  </wave_state>
+
+  <db_ref_list>
+    <db_ref path="tb_kvq_top.wdb" id="1" type="auto">
+      <top_modules>
+        <top_module name="tb_kvq_top"/>
+      </top_modules>
+    </db_ref>
+  </db_ref_list>
+
+  <zoom_setting>
+    <zoom_signal_name name="tb_kvq_top.clk"/>
+  </zoom_setting>
+
+  <WVObjectSize size="60"/>
+
+  <!-- Group: clock + reset -->
+  <wvobject fp_name="group_clk_rst" type="group">
+    <obj_property name="label">clk_reset</obj_property>
+    <obj_property name="DisplayName">clk_reset</obj_property>
+    <wvobject fp_name="/tb_kvq_top/clk"   type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/rst_n" type="logic"/>
+  </wvobject>
+
+  <!-- Group: AXIS request interface (DUT slave) -->
+  <wvobject fp_name="group_req_iface" type="group">
+    <obj_property name="label">axis_request</obj_property>
+    <wvobject fp_name="/tb_kvq_top/s_axis_req_tvalid" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axis_req_tready" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axis_req_tlast"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_parser/parsed.opcode"     type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_parser/parsed.request_id" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_parser/parsed.tenant_id"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_parser/parsed.prio"       type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_parser/parsed.deadline_cycles" type="logic"/>
+  </wvobject>
+
+  <!-- Group: AXIS response interface (DUT master) -->
+  <wvobject fp_name="group_resp_iface" type="group">
+    <obj_property name="label">axis_response</obj_property>
+    <wvobject fp_name="/tb_kvq_top/m_axis_resp_tvalid" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/m_axis_resp_tready" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/m_axis_resp_tlast"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.status"            type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.request_id"        type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.tenant_id"         type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.latency_cycles"    type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.deadline_miss"     type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_resp/resp.hit"               type="logic"/>
+  </wvobject>
+
+  <!-- Group: deadline arbiter + credit snapshot -->
+  <wvobject fp_name="group_arbiter" type="group">
+    <obj_property name="label">arbiter_credits</obj_property>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_valid"      type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_ready"      type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_tenant_idx" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_idx"       type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_prio"      type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_slack"     type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/rr_ptr"         type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/credit_snapshot"         type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/credit_starvation_pulse" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/refill_pulse"            type="logic"/>
+  </wvobject>
+
+  <!-- Group: per-tenant queue occupancy -->
+  <wvobject fp_name="group_queues" type="group">
+    <obj_property name="label">per_tenant_queues</obj_property>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/global_queue_occupancy" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/queue_full"             type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[0]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[1]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[2]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[3]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[4]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[5]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[6]" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/per_tenant_occupancy[7]" type="logic"/>
+  </wvobject>
+
+  <!-- Group: AXI4-Lite control -->
+  <wvobject fp_name="group_axil" type="group">
+    <obj_property name="label">axi4_lite</obj_property>
+    <wvobject fp_name="/tb_kvq_top/s_axil_awvalid" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_awready" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_awaddr"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_wvalid"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_wready"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_wdata"   type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_bvalid"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_arvalid" type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_rvalid"  type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/s_axil_rdata"   type="logic"/>
+  </wvobject>
+
+  <!-- Group: top-level status -->
+  <wvobject fp_name="group_status" type="group">
+    <obj_property name="label">top_status</obj_property>
+    <wvobject fp_name="/tb_kvq_top/error_seen"             type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/queue_full"             type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/deadline_miss_seen"     type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/active_tenant_count"    type="logic"/>
+    <wvobject fp_name="/tb_kvq_top/global_queue_occupancy" type="logic"/>
+  </wvobject>
+
+  <!-- =====================================================================
+       Group: kvq_internal
+       Three nested sub-groups exposing the deepest scheduler state. Signal
+       names are mapped from the (initial spec) naming to the actual RTL
+       identifiers in rtl/*.sv:
+         credits sub-group:  bucket_credit[t] / bucket_burst_lim[t] (no per-
+                             tenant starvation counter exists - the closest
+                             signal is the single-cycle pulse
+                             credit_starvation_pulse).
+         arbiter sub-group:  sel_tenant_idx, best_slack, best_prio
+                             (winner-only; per-tenant slack/priority live in
+                             the queued requests). deq_valid is the
+                             eligibility vector (8 bits).
+         queues  sub-group:  q_head[t], q_tail[t], q_count[t] +
+                             per_tenant_occupancy[t].
+       Hierarchy prefix: /tb_kvq_top/u_dut/... ; u_dut is the kvq_top
+       instance name inside tb_kvq_top.
+       ===================================================================== -->
+  <wvobject fp_name="group_kvq_internal" type="group">
+    <obj_property name="label">kvq_internal</obj_property>
+
+    <!-- sub-group 1: per-tenant credits -->
+    <wvobject fp_name="group_kvq_int_credits" type="group">
+      <obj_property name="label">credits</obj_property>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/credit_snapshot"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/credit_starvation_pulse" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/refill_pulse"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/refill_cnt"              type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[0]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[1]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[2]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[3]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[4]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[5]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[6]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_credit[7]"        type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[0]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[1]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[2]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[3]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[4]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[5]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[6]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_avail[7]"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[0]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[1]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[2]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[3]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[4]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[5]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[6]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_burst_lim[7]"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[0]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[1]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[2]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[3]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[4]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[5]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[6]"    type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_credit/bucket_refill_amt[7]"    type="logic"/>
+    </wvobject>
+
+    <!-- sub-group 2: arbiter decision -->
+    <wvobject fp_name="group_kvq_int_arbiter" type="group">
+      <obj_property name="label">arbiter</obj_property>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_valid"      type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_ready"      type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/sel_tenant_idx" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_idx"       type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_found"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_prio"      type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/best_slack"     type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/rr_ptr"         type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_valid"      type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_grant"      type="logic"/>
+      <!-- Head-of-queue priority and deadline per tenant (the per-tenant
+           slack / priority_class the spec was asking about) -->
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[0].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[1].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[2].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[3].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[4].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[5].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[6].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[7].prio"            type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[0].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[1].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[2].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[3].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[4].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[5].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[6].deadline_cycles" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_arb/deq_req[7].deadline_cycles" type="logic"/>
+    </wvobject>
+
+    <!-- sub-group 3: per-tenant queue head/tail/occupancy -->
+    <wvobject fp_name="group_kvq_int_queues" type="group">
+      <obj_property name="label">queues</obj_property>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/global_queue_occupancy" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/queue_full"             type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[0]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[1]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[2]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[3]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[4]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[5]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[6]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_head[7]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[0]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[1]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[2]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[3]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[4]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[5]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[6]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_tail[7]"  type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[0]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[1]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[2]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[3]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[4]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[5]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[6]" type="logic"/>
+      <wvobject fp_name="/tb_kvq_top/u_dut/u_qmgr/q_count[7]" type="logic"/>
+    </wvobject>
+  </wvobject>
+</wave_config>
