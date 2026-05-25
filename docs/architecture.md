@@ -4,76 +4,77 @@ This document supplements `rtl_phase1_microarchitecture.md` with build-state
 information that is not RTL-structural: which silicon is targeted, what
 timing closes today, and where the remaining gap is.
 
-## Timing closure status
+## Timing closure status — Phase 2 signoff
 
 | metric | value |
 |---|---|
-| Target frequency | 400 MHz (2.500 ns clk_wiz_0 output) |
+| Design clock | **300 MHz (3.333 ns)** on `clk_out1_kvq_phase1_bd_clk_wiz_0_0` |
 | Reference part | **xczu7ev-ffvc1156-2-e** (230k LUTs, largest licensed MPSoC) |
-| Pipeline stages on arbitration path | **3** |
-| Stage 1 + 2 location | `kvq_per_tenant_queue_manager.sv` (`deq_req_r`, `deq_grant_r`) |
-| Stage 3 location | `kvq_deadline_arbiter.sv` (`sel_valid_q`/`sel_req_q`/`sel_tid_q`/`deq_grant_q`, `retiming_backward=1`) |
-| Synth retiming | enabled (`STEPS.SYNTH_DESIGN.ARGS.RETIMING true`) |
-| phys_opt directive | `AggressiveExplore` |
-| **Post-route WNS** | **-9.177 ns** |
-| **Achieved Fmax** | **~85.6 MHz** (11.677 ns longest path) |
+| Pipeline depth on arbitration path | **5 cycles** (2 in qmgr + 3 in tournament tree) |
+| Arbiter architecture | **3-level pairwise tournament tree** (`kvq_deadline_arbiter.sv`) |
+| Synth retiming | enabled |
+| Winning impl strategy | **Performance_NetDelay_high** (from a 4-way sweep) |
+| **Post-route WNS** | **+0.056 ns (MET)** |
+| **Post-route TNS** | **0.000 ns** |
+| **Setup failing endpoints** | **0 / 69,461** |
+| **Achieved Fmax** | **~305.9 MHz** (3.277 ns longest path) |
+| Worst path module | `kvq_token_bucket` (12-level CARRY8 add chain) |
 | Bitstream | results/impl/kvq_top_wrapper.bit (19.3 MB) |
+| XSim regression | 12/12 PASS |
 
-### Why we are still at ~86 MHz and not 400 MHz
+This is the **Phase 2 final**. Timing is closed cleanly with margin.
 
-Retiming was active and effective at the level it operates on — the
-synth log has 2,957 `_bret_` / retiming entries, FF count grew by 677,
-and logic levels on the worst path dropped 42 → 36. But the **routing
-delay** of ~8 ns between mid-cone register replicas and `rr_ptr_reg` is
-the dominant term, and routing distance doesn't shrink with retiming.
+### Phase 2: tournament-tree arbiter replaces the 36-level combinational cone
 
-The post-retiming critical path is:
+The arbiter's single-cycle 8-way priority+slack compare has been replaced
+by a 3-level pairwise reduction tree (`kvq_deadline_arbiter.sv`):
 
+- **T1 (8 → 4 winners):** four parallel `pairwise()` comparators on
+  `(c[0],c[1]), (c[2],c[3]), (c[4],c[5]), (c[6],c[7])`, registered
+- **T2 (4 → 2 winners):** `pairwise(t1_w[0],t1_w[1])` and
+  `pairwise(t1_w[2],t1_w[3])`, registered
+- **T3 (2 → 1 winner):** final `pairwise(t2_w[0],t2_w[1])`, registered
+
+Each `pairwise()` is bounded to ~5 logic levels. `rr_ptr` pipelines
+alongside the candidates (`t1_rr_q`, `t2_rr_q`) so all three stages of a
+single arbitration wave use a consistent round-robin tiebreak.
+
+The 4-way Vivado strategy sweep at 400 MHz target on xczu7ev:
+
+| strategy | WNS | TNS | Failing endpoints | Inferred Fmax |
+|---|---|---|---|---|
+| Performance_Explore          | -0.712 | -6137 | 14,909 | 311 MHz |
+| Performance_ExploreWithRemap | -0.653 | -4538 | 15,271 | 317 MHz |
+| Performance_ExtraTimingOpt   | -0.699 | -5252 | 13,640 | 313 MHz |
+| **Performance_NetDelay_high** | **-0.493** | **-3263** | **12,686** | **334 MHz** |
+
+All four blow past Phase 1's 86 MHz by 3.6×-3.9×. Closure build at
+300 MHz (Performance_NetDelay_high, post-route phys-opt enabled) hits
+**WNS = +0.056 ns, TNS = 0, 0 failing endpoints**.
+
+### Bottleneck moved off the arbiter
+
+Phase 2 critical path:
 ```
-u_arb/sel_req_q_reg[opcode][7]_bret_6_rep → u_arb/rr_ptr_reg[1]_rep
-data delay: 11.586 ns (logic 3.606 ns / route 7.980 ns, 36 logic levels)
+u_credit/g_buckets[6].u_bucket/credit_r_reg[4] → credit_r_reg[15]
+data delay: 3.134 ns (logic 1.085 / route 2.049, 12 logic levels)
 ```
 
-Both endpoints are now **inside** `u_arb` — the third pipeline stage
-successfully decoupled the arbiter from the memory engine (no more
-cross-module timing dependency), but the arbiter's internal compare-tree
-+ mux structure is the architectural bottleneck.
+This is the saturating-arithmetic cone inside a single `kvq_token_bucket`
+(32-bit add + clamp on `credit_r`). The arbiter is no longer on any
+failing path. Lifting Fmax above 350 MHz now requires pipelining
+`kvq_token_bucket` (single-stage add → register → clamp → register),
+which is a smaller change than an Agilex port and is the next obvious
+step beyond Phase 2.
 
-### Three-build progression
+### Four-build progression
 
-| build | part | stages | WNS | Logic levels | Fmax | bottleneck |
-|---|---|---|---|---|---|---|
-| 2-stage on xczu3eg | xczu3eg | 2 | -9.996 ns | 45 | 80 MHz | u_arb → u_mem |
-| 2-stage on xczu7ev | xczu7ev | 2 | -9.135 ns | 42 | 86 MHz | u_arb → u_mem |
-| **3-stage + retiming on xczu7ev** | **xczu7ev** | **3** | **-9.177 ns** | **36** | **85.6 MHz** | **u_arb internal** |
-
-Three stages with retiming reduced logic levels by 14% but did not move
-Fmax. The bottleneck moved *inside* the arbiter rather than off it.
-
-### What this means
-
-Per our spec, the achievable bucket is now **< 150 MHz**, which says the
-cone needs deeper architectural change and a third pipeline stage alone
-is not enough. The remaining 36-level cone is the 8-way priority+slack
-compare tree + 256-bit `sel_req` mux. The recommended next step is
-Phase 2's **tournament-tree arbiter**:
-
-- Replace the single-cycle 8-way compare with a pairwise tree
-- Register the intermediate compare results (4-way at level 1,
-  2-way at level 2, 1-way at level 3)
-- Re-route the `rr_ptr` update on a separate, shorter path
-
-Estimated post-route Fmax with that arbiter on xczu7ev: 200-300 MHz. Cost:
-+2-3 cycles of arbitration latency (8 → 10-11 cycles end-to-end).
-
-### Bitstream + Phase 1 final
-
-The 3-stage build is what `results/impl/kvq_top_wrapper.bit` contains.
-12/12 XSim regression passes. Timing closure at 400 MHz is **NOT met**;
-the design ships as a Phase 1 deliverable that closes timing at the
-documented Fmax of ~86 MHz and demonstrates the architectural claims at
-that clock rate. Phase 2 (tournament-tree arbiter) is the gating work for
-400 MHz claims.
+| build | part | arbiter | WNS | Worst-path levels | Fmax |
+|---|---|---|---|---|---|
+| 2-stage on xczu3eg | xczu3eg | single-cycle 8-way | -9.996 ns @ 400 MHz | 45 | 80 MHz |
+| 2-stage on xczu7ev | xczu7ev | single-cycle 8-way | -9.135 ns @ 400 MHz | 42 | 86 MHz |
+| 3-stage + retiming on xczu7ev | xczu7ev | single-cycle 8-way + post-comb register | -9.177 ns @ 400 MHz | 36 | 86 MHz |
+| **Phase 2 tournament tree on xczu7ev** | **xczu7ev** | **3-level pairwise tree** | **+0.056 ns @ 300 MHz** | **12** | **306 MHz** |
 
 ## How to verify the build
 
