@@ -14,10 +14,14 @@ Pipelining has been applied in three stages over the course of Phase 1.
 | baseline | (none) | nothing - pure combinational | +0 | original Phase 1 RTL |
 | 1 | `kvq_per_tenant_queue_manager.sv` | `deq_req_r` / `deq_valid_r` (q_mem readout) | +1 | 400 MHz retarget Sprint |
 | 2 | `kvq_per_tenant_queue_manager.sv` | `deq_grant_r` (arbiter → qmgr feedback) | +1 | 400 MHz retarget Sprint |
-| 3 | `kvq_deadline_arbiter.sv` | `sel_valid_q` / `sel_req_q` / `sel_tid_q` / `deq_grant_q` (with `retiming_backward = 1`) | +1 | Stage-3 retiming Sprint |
+| 3 (Phase 1) | `kvq_deadline_arbiter.sv` (replaced by tournament tree below) | (deprecated) | (n/a) | Stage-3 retiming Sprint (Phase 1 final) |
+| **T1 (Phase 2)** | `kvq_deadline_arbiter.sv` | tournament leaf: 4 winners of 8 (`t1_w[0..3]`) + `t1_rr_q` | **+1** | Phase 2 tournament-tree Sprint |
+| **T2 (Phase 2)** | `kvq_deadline_arbiter.sv` | tournament mid:  2 winners of 4 (`t2_w[0..1]`) + `t2_rr_q` | **+1** | Phase 2 tournament-tree Sprint |
+| **T3 (Phase 2)** | `kvq_deadline_arbiter.sv` | tournament final: `sel_valid_q` / `sel_req_q` / `sel_tid_q` / `deq_grant_q` | **+1** | Phase 2 tournament-tree Sprint |
 
-**Total arbitration-path latency added: +3 cycles** vs the unpipelined
-Phase 1 baseline.
+**Total arbitration-path latency added in Phase 2: +5 cycles** vs the
+unpipelined original (qmgr stage 1 + qmgr stage 2 + tournament T1/T2/T3).
+That is +2 cycles relative to the Phase 1 stage-3-retiming build.
 
 ## End-to-end response latency
 
@@ -45,18 +49,47 @@ If a future Sprint adds a test that *does* assert a specific cycle count,
 add the expected value to `tests/expected_outputs/<test>.csv` and update
 this document with the new arbitration-path latency.
 
-## What the deadline arbiter still does in one cycle
+## Deadline arbiter (Phase 2 tournament-tree version)
 
-After stage 3, the arbiter's *internal* combinational cone is still:
-- the 8-way priority+slack comparison tree to pick `best_idx`
-- the 256-bit mux `deq_req[best_idx]` that feeds `sel_req_q`
-- the rr_ptr update (combinational `rr_ptr_q1 = best_idx + 1`)
+The single-cycle 8-way combinational compare has been replaced by a
+**3-level pairwise reduction tree** (kvq_deadline_arbiter.sv). Each
+tournament stage is one register with a single pairwise comparator
+between consecutive registers:
 
-Vivado's retimer pulls the `sel_req_q` register backward into this cone
-(see `_bret_*` suffixes in the post-route timing report), but it cannot
-break the cone below ~36 logic levels without a structural RTL change.
-That structural change - a registered tournament-tree compare - is
-Phase 2 work.
+```
+Stage T1 (combinational):  pairwise(c[0],c[1]), pairwise(c[2],c[3]),
+                           pairwise(c[4],c[5]), pairwise(c[6],c[7])
+   |--register--|
+Stage T2 (combinational):  pairwise(t1[0],t1[1]), pairwise(t1[2],t1[3])
+   |--register--|
+Stage T3 (combinational):  pairwise(t2[0],t2[1])
+   |--register--|
+Output:                    sel_valid_q, sel_req_q, sel_tid_q, deq_grant_q
+```
+
+Each `pairwise()` is bounded to ~5 logic levels max (validity check +
+priority compare + slack compare + rr-distance compare). The longest
+combinational segment in the arbiter is now ONE pairwise comparator -
+the 36-level Phase 1 cone is gone.
+
+The post-route worst path on the Phase 2 closure build (300 MHz, MET) is
+in `kvq_token_bucket` (12 logic levels through a CARRY8 adder), not in
+the arbiter. The arbiter is no longer on any failing path on any of the
+four strategies in the sweep.
+
+## rr_ptr in the tournament tree
+
+`rr_ptr` snapshots at each stage so all three pairwise comparators in a
+single arbitration wave use the same value:
+
+```
+T1 latches rr_ptr_t1_q from current rr_ptr
+T2 latches rr_ptr_t2_q from rr_ptr_t1_q
+T3 uses rr_ptr_t2_q
+```
+
+`rr_ptr` itself advances when T3 emits a grant (one cycle after T2
+delivered its winners to T3's input).
 
 ## Module-by-module summary
 

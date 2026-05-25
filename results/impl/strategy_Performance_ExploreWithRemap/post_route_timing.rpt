@@ -1,15 +1,15 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version      : Vivado v.2025.2 (lin64) Build 6299465 Fri Nov 14 12:34:56 MST 2025
-| Date              : Mon May 25 19:15:39 2026
+| Date              : Mon May 25 16:48:45 2026
 | Host              : jotshawlinux-Legion running 64-bit Ubuntu 24.04.4 LTS
-| Command           : report_timing_summary -file /home/jotshawlinux/cxl-kv-forge-qos/results/impl/zcu102_post_route_timing.rpt
+| Command           : report_timing_summary -file /home/jotshawlinux/cxl-kv-forge-qos/results/impl/strategy_Performance_ExploreWithRemap/post_route_timing.rpt
 | Design            : kvq_phase1_bd_wrapper
 | Device            : xczu7ev-ffvc1156
 | Speed File        : -2  PRODUCTION 1.30 05-15-2022
 | Design State      : Physopt postRoute
 | Temperature Grade : E
---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Timing Summary Report
 
@@ -145,10 +145,10 @@ Table of Contents
 
     WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
     -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-      0.056        0.000                      0                76254        0.010        0.000                      0                76254        0.167        0.000                       0                 30660  
+     -0.653    -4537.682                  15271                76350        0.007        0.000                      0                76350       -0.500       -2.000                       4                 30698  
 
 
-All user specified timing constraints are met.
+Timing constraints are not met.
 
 
 ------------------------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ Clock                                   Waveform(ns)         Period(ns)      Fre
 -----                                   ------------         ----------      --------------
 clk_pl_0                                {0.000 5.156}        10.312          96.974          
 kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1  {0.000 5.156}        10.313          96.965          
-  clk_out1_kvq_phase1_bd_clk_wiz_0_0    {0.000 1.667}        3.333           299.985         
+  clk_out1_kvq_phase1_bd_clk_wiz_0_0    {0.000 1.250}        2.500           399.981         
 
 
 ------------------------------------------------------------------------------------------------
@@ -171,7 +171,7 @@ kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1  {0.000 5.156}        10.313          96.
 Clock                                       WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
 -----                                       -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
 kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1                                                                                                                                                    2.063        0.000                       0                     1  
-  clk_out1_kvq_phase1_bd_clk_wiz_0_0          0.056        0.000                      0                69461        0.010        0.000                      0                69461        0.167        0.000                       0                 30659  
+  clk_out1_kvq_phase1_bd_clk_wiz_0_0         -0.653    -4537.682                  15271                69542        0.007        0.000                      0                69542       -0.500       -2.000                       4                 30697  
 
 
 ------------------------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS
 
 Path Group                          From Clock                          To Clock                                WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
 ----------                          ----------                          --------                                -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
-**async_default**                   clk_out1_kvq_phase1_bd_clk_wiz_0_0  clk_out1_kvq_phase1_bd_clk_wiz_0_0        0.500        0.000                      0                 6793        0.086        0.000                      0                 6793  
+**async_default**                   clk_out1_kvq_phase1_bd_clk_wiz_0_0  clk_out1_kvq_phase1_bd_clk_wiz_0_0        0.039        0.000                      0                 6808        0.068        0.000                      0                 6808  
 
 
 ------------------------------------------------------------------------------------------------
@@ -228,34 +228,34 @@ High Pulse Width  Slow    MMCME4_ADV/CLKIN1  n/a            3.094         5.156 
 From Clock:  clk_out1_kvq_phase1_bd_clk_wiz_0_0
   To Clock:  clk_out1_kvq_phase1_bd_clk_wiz_0_0
 
-Setup :            0  Failing Endpoints,  Worst Slack        0.056ns,  Total Violation        0.000ns
-Hold  :            0  Failing Endpoints,  Worst Slack        0.010ns,  Total Violation        0.000ns
-PW    :            0  Failing Endpoints,  Worst Slack        0.167ns,  Total Violation        0.000ns
+Setup :        15271  Failing Endpoints,  Worst Slack       -0.653ns,  Total Violation    -4537.681ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.007ns,  Total Violation        0.000ns
+PW    :            4  Failing Endpoints,  Worst Slack       -0.500ns,  Total Violation       -2.000ns
 ---------------------------------------------------------------------------------------------------
 
 
 Max Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.056ns  (required time - arrival time)
-  Source:                 kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[4]/C
-                            (rising edge-triggered cell FDPE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
-  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[15]/D
-                            (rising edge-triggered cell FDPE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
+Slack (VIOLATED) :        -0.653ns  (required time - arrival time)
+  Source:                 kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[0]/C
+                            (rising edge-triggered cell FDPE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[5]/D
+                            (rising edge-triggered cell FDPE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
   Path Group:             clk_out1_kvq_phase1_bd_clk_wiz_0_0
   Path Type:              Setup (Max at Slow Process Corner)
-  Requirement:            3.333ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@3.333ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
-  Data Path Delay:        3.134ns  (logic 1.085ns (34.622%)  route 2.049ns (65.378%))
-  Logic Levels:           12  (CARRY8=8 LUT2=2 LUT5=2)
-  Clock Path Skew:        -0.110ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    4.693ns = ( 8.026 - 3.333 ) 
-    Source Clock Delay      (SCD):    4.450ns
-    Clock Pessimism Removal (CPR):    -0.353ns
-  Clock Uncertainty:      0.059ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+  Requirement:            2.500ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@2.500ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
+  Data Path Delay:        3.074ns  (logic 1.012ns (32.916%)  route 2.062ns (67.084%))
+  Logic Levels:           12  (CARRY8=8 LUT2=1 LUT3=1 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.046ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    4.931ns = ( 7.431 - 2.500 ) 
+    Source Clock Delay      (SCD):    4.634ns
+    Clock Pessimism Removal (CPR):    -0.343ns
+  Clock Uncertainty:      0.057ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
-    Discrete Jitter          (DJ):    0.095ns
+    Discrete Jitter          (DJ):    0.090ns
     Phase Error              (PE):    0.000ns
-  Clock Net Delay (Source):      2.302ns (routing 0.891ns, distribution 1.411ns)
-  Clock Net Delay (Destination): 2.028ns (routing 0.810ns, distribution 1.218ns)
+  Clock Net Delay (Source):      2.486ns (routing 1.055ns, distribution 1.431ns)
+  Clock Net Delay (Destination): 2.266ns (routing 0.957ns, distribution 1.309ns)
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -268,71 +268,71 @@ Slack (MET) :             0.056ns  (required time - arrival time)
                          net (fo=1, routed)           0.245     2.120    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.028     2.148 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.302     4.450    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/clk
-    SLICE_X30Y328        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[4]/C
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.486     4.634    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/clk
+    SLICE_X70Y188        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[0]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X30Y328        FDPE (Prop_CFF_SLICEL_C_Q)
-                                                      0.079     4.529 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[4]/Q
-                         net (fo=3, routed)           0.618     5.147    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[31]_0[4]
-    SLICE_X31Y334        CARRY8 (Prop_CARRY8_SLICEM_DI[4]_CO[7])
-                                                      0.093     5.240 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_i_18__5/CO[7]
-                         net (fo=1, routed)           0.026     5.266    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_i_18__5_n_0
-    SLICE_X31Y335        CARRY8 (Prop_CARRY8_SLICEM_CI_O[4])
-                                                      0.086     5.352 f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_i_17__5/O[4]
-                         net (fo=6, routed)           0.495     5.847    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled2[12]
-    SLICE_X32Y338        LUT2 (Prop_G6LUT_SLICEL_I0_O)
-                                                      0.050     5.897 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_i_10__5/O
-                         net (fo=1, routed)           0.008     5.905    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_i_10__5_n_0
-    SLICE_X32Y338        CARRY8 (Prop_CARRY8_SLICEL_S[6]_CO[7])
-                                                      0.115     6.020 f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry/CO[7]
-                         net (fo=1, routed)           0.026     6.046    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry_n_0
-    SLICE_X32Y339        CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
-                                                      0.015     6.061 f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry__0/CO[7]
-                         net (fo=1, routed)           0.026     6.087    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry__0_n_0
-    SLICE_X32Y340        CARRY8 (Prop_CARRY8_SLICEL_CI_CO[0])
-                                                      0.052     6.139 f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1_carry__1/CO[0]
-                         net (fo=99, routed)          0.194     6.333    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/refilled1__144
-    SLICE_X31Y338        LUT2 (Prop_F6LUT_SLICEM_I1_O)
-                                                      0.037     6.370 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r[1]_i_2__5/O
-                         net (fo=3, routed)           0.106     6.476    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r[1]_i_2__5_n_0
-    SLICE_X31Y339        LUT5 (Prop_A6LUT_SLICEM_I3_O)
-                                                      0.150     6.626 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry_i_16__5/O
-                         net (fo=1, routed)           0.013     6.639    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry_i_16__5_n_0
-    SLICE_X31Y339        CARRY8 (Prop_CARRY8_SLICEM_S[0]_CO[7])
-                                                      0.192     6.831 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry/CO[7]
-                         net (fo=1, routed)           0.026     6.857    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry_n_0
-    SLICE_X31Y340        CARRY8 (Prop_CARRY8_SLICEM_CI_CO[7])
-                                                      0.015     6.872 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry__0/CO[7]
-                         net (fo=1, routed)           0.026     6.898    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry__0_n_0
-    SLICE_X31Y341        CARRY8 (Prop_CARRY8_SLICEM_CI_CO[0])
-                                                      0.052     6.950 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1_carry__1/CO[0]
-                         net (fo=32, routed)          0.426     7.376    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/next_credit1__52
-    SLICE_X35Y331        LUT5 (Prop_B6LUT_SLICEM_I0_O)
-                                                      0.149     7.525 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r[15]_i_1__0/O
-                         net (fo=1, routed)           0.059     7.584    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r[15]_i_1__0_n_0
-    SLICE_X35Y331        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[15]/D
+    SLICE_X70Y188        FDPE (Prop_AFF_SLICEM_C_Q)
+                                                      0.077     4.711 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[0]/Q
+                         net (fo=3, routed)           0.361     5.072    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[31]_0[0]
+    SLICE_X76Y195        LUT3 (Prop_A6LUT_SLICEL_I0_O)
+                                                      0.050     5.122 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_34/O
+                         net (fo=1, routed)           0.009     5.131    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_34_n_0
+    SLICE_X76Y195        CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     5.321 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_18__1/CO[7]
+                         net (fo=1, routed)           0.026     5.347    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_18__1_n_0
+    SLICE_X76Y196        CARRY8 (Prop_CARRY8_SLICEL_CI_O[7])
+                                                      0.116     5.463 f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_17__1/O[7]
+                         net (fo=6, routed)           0.357     5.820    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled2[15]
+    SLICE_X75Y196        LUT2 (Prop_H6LUT_SLICEL_I1_O)
+                                                      0.051     5.871 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_9__1/O
+                         net (fo=1, routed)           0.010     5.881    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_i_9__1_n_0
+    SLICE_X75Y196        CARRY8 (Prop_CARRY8_SLICEL_S[7]_CO[7])
+                                                      0.115     5.996 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry/CO[7]
+                         net (fo=1, routed)           0.026     6.022    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry_n_0
+    SLICE_X75Y197        CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     6.037 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry__0/CO[7]
+                         net (fo=1, routed)           0.026     6.063    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry__0_n_0
+    SLICE_X75Y198        CARRY8 (Prop_CARRY8_SLICEL_CI_CO[0])
+                                                      0.052     6.115 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1_carry__1/CO[0]
+                         net (fo=101, routed)         0.418     6.533    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/refilled1__144
+    SLICE_X75Y203        LUT6 (Prop_D6LUT_SLICEL_I2_O)
+                                                      0.036     6.569 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry_i_16__1_rewire/O
+                         net (fo=1, routed)           0.223     6.792    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry_i_16__1_n_0
+    SLICE_X74Y201        CARRY8 (Prop_CARRY8_SLICEM_S[0]_CO[7])
+                                                      0.192     6.984 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry/CO[7]
+                         net (fo=1, routed)           0.026     7.010    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry_n_0
+    SLICE_X74Y202        CARRY8 (Prop_CARRY8_SLICEM_CI_CO[7])
+                                                      0.015     7.025 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry__0/CO[7]
+                         net (fo=1, routed)           0.026     7.051    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry__0_n_0
+    SLICE_X74Y203        CARRY8 (Prop_CARRY8_SLICEM_CI_CO[0])
+                                                      0.052     7.103 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1_carry__1/CO[0]
+                         net (fo=32, routed)          0.505     7.608    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/next_credit1__52
+    SLICE_X77Y190        LUT5 (Prop_B6LUT_SLICEL_I0_O)
+                                                      0.051     7.659 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r[5]_i_1__3/O
+                         net (fo=1, routed)           0.049     7.708    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r[5]_i_1__3_n_0
+    SLICE_X77Y190        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[5]/D
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise edge)
-                                                      3.333     3.333 r  
-    BUFG_PS_X0Y80        BUFG_PS                      0.000     3.333 r  kvq_phase1_bd_i/ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
-                         net (fo=1, routed)           1.795     5.128    kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1
+                                                      2.500     2.500 r  
+    BUFG_PS_X0Y80        BUFG_PS                      0.000     2.500 r  kvq_phase1_bd_i/ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+                         net (fo=1, routed)           1.795     4.295    kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1
     MMCM_X1Y0            MMCME4_ADV (Prop_MMCM_CLKIN1_CLKOUT0)
-                                                      0.630     5.758 r  kvq_phase1_bd_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0
-                         net (fo=1, routed)           0.216     5.974    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
+                                                      0.630     4.925 r  kvq_phase1_bd_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0
+                         net (fo=1, routed)           0.216     5.141    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
-                                                      0.024     5.998 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.028     8.026    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/clk
-    SLICE_X35Y331        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[15]/C
-                         clock pessimism             -0.353     7.674    
-                         clock uncertainty           -0.059     7.614    
-    SLICE_X35Y331        FDPE (Setup_BFF_SLICEM_C_D)
-                                                      0.025     7.639    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[6].u_bucket/credit_r_reg[15]
+                                                      0.024     5.165 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.266     7.431    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/clk
+    SLICE_X77Y190        FDPE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[5]/C
+                         clock pessimism             -0.343     7.088    
+                         clock uncertainty           -0.057     7.030    
+    SLICE_X77Y190        FDPE (Setup_BFF_SLICEL_C_D)
+                                                      0.025     7.055    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_credit/g_buckets[2].u_bucket/credit_r_reg[5]
   -------------------------------------------------------------------
-                         required time                          7.639    
-                         arrival time                          -7.584    
+                         required time                          7.055    
+                         arrival time                          -7.708    
   -------------------------------------------------------------------
-                         slack                                  0.056    
+                         slack                                 -0.653    
 
 
 
@@ -340,22 +340,22 @@ Slack (MET) :             0.056ns  (required time - arrival time)
 
 Min Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.010ns  (arrival time - required time)
-  Source:                 kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[47]/C
-                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
-  Destination:            kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[12]/D
-                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
+Slack (MET) :             0.007ns  (arrival time - required time)
+  Source:                 kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_arb/deq_grant_q_reg[7]/C
+                            (rising edge-triggered cell FDCE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_grant_r_reg[7]/D
+                            (rising edge-triggered cell FDCE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
   Path Group:             clk_out1_kvq_phase1_bd_clk_wiz_0_0
   Path Type:              Hold (Min at Slow Process Corner)
   Requirement:            0.000ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
-  Data Path Delay:        0.170ns  (logic 0.059ns (34.706%)  route 0.111ns (65.294%))
+  Data Path Delay:        0.129ns  (logic 0.058ns (44.961%)  route 0.071ns (55.039%))
   Logic Levels:           0  
-  Clock Path Skew:        0.098ns (DCD - SCD - CPR)
-    Destination Clock Delay (DCD):    4.251ns
-    Source Clock Delay      (SCD):    4.527ns
-    Clock Pessimism Removal (CPR):    -0.375ns
-  Clock Net Delay (Source):      1.862ns (routing 0.810ns, distribution 1.052ns)
-  Clock Net Delay (Destination): 2.103ns (routing 0.891ns, distribution 1.212ns)
+  Clock Path Skew:        0.060ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    4.751ns
+    Source Clock Delay      (SCD):    5.027ns
+    Clock Pessimism Removal (CPR):    -0.336ns
+  Clock Net Delay (Source):      2.362ns (routing 0.957ns, distribution 1.405ns)
+  Clock Net Delay (Destination): 2.603ns (routing 1.055ns, distribution 1.548ns)
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -368,13 +368,13 @@ Slack (MET) :             0.010ns  (arrival time - required time)
                          net (fo=1, routed)           0.216     2.641    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.024     2.665 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       1.862     4.527    kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/m_axi_s2mm_aclk
-    SLICE_X58Y122        FDRE                                         r  kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[47]/C
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.362     5.027    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_arb/clk
+    SLICE_X60Y185        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_arb/deq_grant_q_reg[7]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X58Y122        FDRE (Prop_DFF_SLICEL_C_Q)
-                                                      0.059     4.586 r  kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[47]/Q
-                         net (fo=1, routed)           0.111     4.697    kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/Q[40]
-    SLICE_X60Y122        FDRE                                         r  kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[12]/D
+    SLICE_X60Y185        FDCE (Prop_CFF_SLICEL_C_Q)
+                                                      0.058     5.085 r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_arb/deq_grant_q_reg[7]/Q
+                         net (fo=1, routed)           0.071     5.156    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_grant_r_reg[7]_0[7]
+    SLICE_X60Y185        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_grant_r_reg[7]/D
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise edge)
@@ -386,16 +386,16 @@ Slack (MET) :             0.010ns  (arrival time - required time)
                          net (fo=1, routed)           0.245     2.120    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.028     2.148 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.103     4.251    kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/m_axi_s2mm_aclk
-    SLICE_X60Y122        FDRE                                         r  kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[12]/C
-                         clock pessimism              0.375     4.626    
-    SLICE_X60Y122        FDRE (Hold_EFF2_SLICEL_C_D)
-                                                      0.062     4.688    kvq_phase1_bd_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[12]
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.603     4.751    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/clk
+    SLICE_X60Y185        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_grant_r_reg[7]/C
+                         clock pessimism              0.336     5.087    
+    SLICE_X60Y185        FDCE (Hold_FFF2_SLICEL_C_D)
+                                                      0.062     5.149    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_grant_r_reg[7]
   -------------------------------------------------------------------
-                         required time                         -4.688    
-                         arrival time                           4.697    
+                         required time                         -5.149    
+                         arrival time                           5.156    
   -------------------------------------------------------------------
-                         slack                                  0.010    
+                         slack                                  0.007    
 
 
 
@@ -404,14 +404,14 @@ Slack (MET) :             0.010ns  (arrival time - required time)
 Pulse Width Checks
 --------------------------------------------------------------------------------------
 Clock Name:         clk_out1_kvq_phase1_bd_clk_wiz_0_0
-Waveform(ns):       { 0.000 1.667 }
-Period(ns):         3.333
+Waveform(ns):       { 0.000 1.250 }
+Period(ns):         2.500
 Sources:            { kvq_phase1_bd_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0 }
 
 Check Type        Corner  Lib Pin          Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location  Pin
-Min Period        n/a     PS8/MAXIGP0ACLK  n/a            3.000         3.333       0.333      PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
-Low Pulse Width   Slow    PS8/MAXIGP0ACLK  n/a            1.500         1.667       0.167      PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
-High Pulse Width  Slow    PS8/MAXIGP0ACLK  n/a            1.500         1.667       0.167      PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
+Min Period        n/a     PS8/MAXIGP0ACLK  n/a            3.000         2.500       -0.500     PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
+Low Pulse Width   Slow    PS8/MAXIGP0ACLK  n/a            1.500         1.250       -0.250     PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
+High Pulse Width  Slow    PS8/MAXIGP0ACLK  n/a            1.500         1.250       -0.250     PS8_X0Y0  kvq_phase1_bd_i/ps_e_0/inst/PS8_i/MAXIGP0ACLK
 
 
 
@@ -420,33 +420,33 @@ Path Group:  **async_default**
 From Clock:  clk_out1_kvq_phase1_bd_clk_wiz_0_0
   To Clock:  clk_out1_kvq_phase1_bd_clk_wiz_0_0
 
-Setup :            0  Failing Endpoints,  Worst Slack        0.500ns,  Total Violation        0.000ns
-Hold  :            0  Failing Endpoints,  Worst Slack        0.086ns,  Total Violation        0.000ns
+Setup :            0  Failing Endpoints,  Worst Slack        0.039ns,  Total Violation        0.000ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.068ns,  Total Violation        0.000ns
 ---------------------------------------------------------------------------------------------------
 
 
 Max Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.500ns  (required time - arrival time)
-  Source:                 kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_26/C
-                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
-  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/tdata_r_reg[132]/CLR
-                            (recovery check against rising-edge clock clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
+Slack (MET) :             0.039ns  (required time - arrival time)
+  Source:                 kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_2/C
+                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[6][prio][0]/CLR
+                            (recovery check against rising-edge clock clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
   Path Group:             **async_default**
   Path Type:              Recovery (Max at Slow Process Corner)
-  Requirement:            3.333ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@3.333ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
-  Data Path Delay:        2.595ns  (logic 0.079ns (3.045%)  route 2.516ns (96.955%))
+  Requirement:            2.500ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@2.500ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
+  Data Path Delay:        2.245ns  (logic 0.079ns (3.518%)  route 2.166ns (96.482%))
   Logic Levels:           0  
-  Clock Path Skew:        -0.114ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    4.704ns = ( 8.037 - 3.333 ) 
-    Source Clock Delay      (SCD):    4.465ns
-    Clock Pessimism Removal (CPR):    -0.353ns
-  Clock Uncertainty:      0.059ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+  Clock Path Skew:        -0.092ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    4.898ns = ( 7.398 - 2.500 ) 
+    Source Clock Delay      (SCD):    4.575ns
+    Clock Pessimism Removal (CPR):    -0.415ns
+  Clock Uncertainty:      0.057ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
-    Discrete Jitter          (DJ):    0.095ns
+    Discrete Jitter          (DJ):    0.090ns
     Phase Error              (PE):    0.000ns
-  Clock Net Delay (Source):      2.317ns (routing 0.891ns, distribution 1.426ns)
-  Clock Net Delay (Destination): 2.039ns (routing 0.810ns, distribution 1.229ns)
+  Clock Net Delay (Source):      2.427ns (routing 1.055ns, distribution 1.372ns)
+  Clock Net Delay (Destination): 2.233ns (routing 0.957ns, distribution 1.276ns)
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -459,35 +459,35 @@ Slack (MET) :             0.500ns  (required time - arrival time)
                          net (fo=1, routed)           0.245     2.120    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.028     2.148 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.317     4.465    kvq_phase1_bd_i/reset_0/U0/slowest_sync_clk
-    SLICE_X34Y306        FDRE                                         r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_26/C
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.427     4.575    kvq_phase1_bd_i/reset_0/U0/slowest_sync_clk
+    SLICE_X66Y224        FDRE                                         r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_2/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X34Y306        FDRE (Prop_EFF_SLICEL_C_Q)
-                                                      0.079     4.544 r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_26/Q
-                         net (fo=244, routed)         2.516     7.060    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/peripheral_aresetn[0]_repN_26_alias
-    SLICE_X30Y332        FDCE                                         f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/tdata_r_reg[132]/CLR  (IS_INVERTED)
+    SLICE_X66Y224        FDRE (Prop_EFF_SLICEL_C_Q)
+                                                      0.079     4.654 r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_2/Q
+                         net (fo=214, routed)         2.166     6.820    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/peripheral_aresetn[0]_repN_2_alias
+    SLICE_X71Y179        FDCE                                         f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[6][prio][0]/CLR  (IS_INVERTED)
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise edge)
-                                                      3.333     3.333 r  
-    BUFG_PS_X0Y80        BUFG_PS                      0.000     3.333 r  kvq_phase1_bd_i/ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
-                         net (fo=1, routed)           1.795     5.128    kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1
+                                                      2.500     2.500 r  
+    BUFG_PS_X0Y80        BUFG_PS                      0.000     2.500 r  kvq_phase1_bd_i/ps_e_0/inst/buffer_pl_clk_0.PL_CLK_0_BUFG/O
+                         net (fo=1, routed)           1.795     4.295    kvq_phase1_bd_i/clk_wiz_0/inst/clk_in1
     MMCM_X1Y0            MMCME4_ADV (Prop_MMCM_CLKIN1_CLKOUT0)
-                                                      0.630     5.758 r  kvq_phase1_bd_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0
-                         net (fo=1, routed)           0.216     5.974    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
+                                                      0.630     4.925 r  kvq_phase1_bd_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0
+                         net (fo=1, routed)           0.216     5.141    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
-                                                      0.024     5.998 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.039     8.037    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/clk
-    SLICE_X30Y332        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/tdata_r_reg[132]/C
-                         clock pessimism             -0.353     7.685    
-                         clock uncertainty           -0.059     7.625    
-    SLICE_X30Y332        FDCE (Recov_DFF_SLICEL_C_CLR)
-                                                     -0.066     7.559    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_resp/tdata_r_reg[132]
+                                                      0.024     5.165 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.233     7.398    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/clk
+    SLICE_X71Y179        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[6][prio][0]/C
+                         clock pessimism             -0.415     6.983    
+                         clock uncertainty           -0.057     6.926    
+    SLICE_X71Y179        FDCE (Recov_CFF_SLICEM_C_CLR)
+                                                     -0.066     6.860    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[6][prio][0]
   -------------------------------------------------------------------
-                         required time                          7.559    
-                         arrival time                          -7.060    
+                         required time                          6.860    
+                         arrival time                          -6.820    
   -------------------------------------------------------------------
-                         slack                                  0.500    
+                         slack                                  0.039    
 
 
 
@@ -495,22 +495,22 @@ Slack (MET) :             0.500ns  (required time - arrival time)
 
 Min Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.086ns  (arrival time - required time)
-  Source:                 kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_13/C
-                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
-  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[0][opcode][7]/CLR
-                            (removal check against rising-edge clock clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.667ns period=3.333ns})
+Slack (MET) :             0.068ns  (arrival time - required time)
+  Source:                 kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_28/C
+                            (rising edge-triggered cell FDRE clocked by clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Destination:            kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/valid_bit_reg[3440]/CLR
+                            (removal check against rising-edge clock clk_out1_kvq_phase1_bd_clk_wiz_0_0  {rise@0.000ns fall@1.250ns period=2.500ns})
   Path Group:             **async_default**
   Path Type:              Removal (Min at Slow Process Corner)
   Requirement:            0.000ns  (clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns - clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise@0.000ns)
-  Data Path Delay:        0.225ns  (logic 0.059ns (26.222%)  route 0.166ns (73.778%))
+  Data Path Delay:        0.232ns  (logic 0.058ns (24.997%)  route 0.174ns (75.003%))
   Logic Levels:           0  
-  Clock Path Skew:        0.171ns (DCD - SCD - CPR)
-    Destination Clock Delay (DCD):    4.426ns
-    Source Clock Delay      (SCD):    4.615ns
-    Clock Pessimism Removal (CPR):    -0.360ns
-  Clock Net Delay (Source):      1.950ns (routing 0.810ns, distribution 1.140ns)
-  Clock Net Delay (Destination): 2.278ns (routing 0.891ns, distribution 1.387ns)
+  Clock Path Skew:        0.196ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    4.932ns
+    Source Clock Delay      (SCD):    5.147ns
+    Clock Pessimism Removal (CPR):    -0.411ns
+  Clock Net Delay (Source):      2.482ns (routing 0.957ns, distribution 1.525ns)
+  Clock Net Delay (Destination): 2.784ns (routing 1.055ns, distribution 1.729ns)
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -523,13 +523,13 @@ Slack (MET) :             0.086ns  (arrival time - required time)
                          net (fo=1, routed)           0.216     2.641    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.024     2.665 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       1.950     4.615    kvq_phase1_bd_i/reset_0/U0/slowest_sync_clk
-    SLICE_X42Y333        FDRE                                         r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_13/C
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.482     5.147    kvq_phase1_bd_i/reset_0/U0/slowest_sync_clk
+    SLICE_X32Y299        FDRE                                         r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_28/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X42Y333        FDRE (Prop_HFF2_SLICEM_C_Q)
-                                                      0.059     4.674 r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_13/Q
-                         net (fo=173, routed)         0.166     4.840    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/peripheral_aresetn[0]_repN_13_alias
-    SLICE_X40Y333        FDCE                                         f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[0][opcode][7]/CLR  (IS_INVERTED)
+    SLICE_X32Y299        FDRE (Prop_AFF_SLICEL_C_Q)
+                                                      0.058     5.205 r  kvq_phase1_bd_i/reset_0/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N_replica_28/Q
+                         net (fo=238, routed)         0.174     5.379    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/peripheral_aresetn[0]_repN_28_alias
+    SLICE_X30Y301        FDCE                                         f  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/valid_bit_reg[3440]/CLR  (IS_INVERTED)
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_out1_kvq_phase1_bd_clk_wiz_0_0 rise edge)
@@ -541,16 +541,16 @@ Slack (MET) :             0.086ns  (arrival time - required time)
                          net (fo=1, routed)           0.245     2.120    kvq_phase1_bd_i/clk_wiz_0/inst/clk_out1_kvq_phase1_bd_clk_wiz_0_0
     BUFGCE_X1Y17         BUFGCE (Prop_BUFCE_BUFGCE_I_O)
                                                       0.028     2.148 r  kvq_phase1_bd_i/clk_wiz_0/inst/clkout1_buf/O
-    X1Y2 (CLOCK_ROOT)    net (fo=30657, routed)       2.278     4.426    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/clk
-    SLICE_X40Y333        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[0][opcode][7]/C
-                         clock pessimism              0.360     4.786    
-    SLICE_X40Y333        FDCE (Remov_CFF_SLICEL_C_CLR)
-                                                     -0.032     4.754    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_qmgr/deq_req_r_reg[0][opcode][7]
+    X2Y3 (CLOCK_ROOT)    net (fo=30695, routed)       2.784     4.932    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/clk
+    SLICE_X30Y301        FDCE                                         r  kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/valid_bit_reg[3440]/C
+                         clock pessimism              0.411     5.343    
+    SLICE_X30Y301        FDCE (Remov_DFF_SLICEL_C_CLR)
+                                                     -0.032     5.311    kvq_phase1_bd_i/kvq_top_0/inst/u_kvq_top/u_mem/u_bram/valid_bit_reg[3440]
   -------------------------------------------------------------------
-                         required time                         -4.754    
-                         arrival time                           4.840    
+                         required time                         -5.311    
+                         arrival time                           5.379    
   -------------------------------------------------------------------
-                         slack                                  0.086    
+                         slack                                  0.068    
 
 
 

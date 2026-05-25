@@ -1,19 +1,36 @@
 // -----------------------------------------------------------------------------
 // kvq_deadline_arbiter.sv
-// Picks one non-empty tenant queue per cycle subject to:
-//   1) lowest priority_class wins
-//   2) smallest deadline slack wins
-//   3) round-robin tie-break
 //
-// For Phase 1, deadline slack is computed as (req.deadline_cycles) relative to
-// a free-running cycle counter snapshot of when the head-of-queue request was
-// enqueued. Because the queue manager does not retain enqueue timestamps in
-// MVP, we use the head request's raw deadline_cycles field as the slack
-// surrogate. This is correct enough for ordering during Phase 1; refined slack
-// tracking is a Phase 2 task.
+// Phase 2: pipelined tournament-tree arbiter.
 //
-// Single-stage combinational arbitration. One-hot deq_grant pulses when
-// downstream (latency_tracker / memory_engine) is ready.
+// Replaces the Phase 1 single-cycle 8-way priority+slack compare cone (which
+// retiming could only shrink from 42 -> 36 logic levels and capped Fmax at
+// ~86 MHz) with a 3-level pairwise reduction:
+//
+//   Stage T1 (8 -> 4 winners):  pairwise(c[0],c[1]) | pairwise(c[2],c[3])
+//                               pairwise(c[4],c[5]) | pairwise(c[6],c[7])
+//   Stage T2 (4 -> 2 winners):  pairwise(t1[0],t1[1]) | pairwise(t1[2],t1[3])
+//   Stage T3 (2 -> 1 winner):   pairwise(t2[0],t2[1])  -> sel_*_q outputs
+//
+// Each stage has 4-6 logic levels worst case in its pairwise comparator chain,
+// so the worst combinational segment between any two registers in the arbiter
+// is bounded by a single pairwise_compare.
+//
+// pairwise_compare semantics (preserving Phase 1 behavior - LOWER priority
+// number wins, smaller slack wins, round-robin tiebreak last):
+//   - if !a.valid  -> b
+//   - if !b.valid  -> a
+//   - prio:        smaller wins
+//   - slack:       smaller wins on prio tie
+//   - rr distance: smaller wins on prio+slack tie (round-robin)
+//
+// rr_ptr pipelines alongside the candidates so every tournament stage uses
+// the same rr_ptr value that was live when this wave's candidates were
+// latched at T1. rr_ptr advances when the final stage (T3) emits a grant.
+//
+// Module port list is unchanged from Phase 1 - kvq_top.sv needs no edits.
+// Net latency vs the Phase 1 stage-3 build: +2 cycles (T1, T2 are new;
+// the Phase 1 stage-3 register collapses into T3's output register).
 // -----------------------------------------------------------------------------
 
 `timescale 1ns/1ps
@@ -30,102 +47,167 @@ module kvq_deadline_arbiter
   input  kvq_req_t                        deq_req      [0:MAX_TENANTS-1],
   output logic [MAX_TENANTS-1:0]          deq_grant,
 
-  // Per-tenant priority_class snapshot (driven by top from contract table
-  // for the *head* request's tenant); MVP uses the head request's own
-  // .priority field.
-  // (No external priority input - we use req.priority bits 3:0.)
-
-  // Selected request output to latency_tracker
+  // Selected request output to mem_engine
   output logic                            sel_valid,
   input  logic                            sel_ready,
   output kvq_req_t                        sel_req,
   output logic [TENANT_IDX_WIDTH-1:0]     sel_tenant_idx
 );
 
-  logic [TENANT_IDX_WIDTH-1:0] rr_ptr;
+  // ---------------------------------------------------------------------------
+  // Tournament-tree carrier type. One per contestant at every tree level.
+  // ---------------------------------------------------------------------------
+  typedef struct packed {
+    logic                       valid;
+    logic [3:0]                 prio;
+    logic [31:0]                slack;
+    logic [TENANT_IDX_WIDTH-1:0] tid;
+    kvq_req_t                   req;
+  } cand_t;
 
-  logic [TENANT_IDX_WIDTH-1:0] best_idx;
-  logic                        best_found;
-  logic [3:0]                  best_prio;
-  logic [31:0]                 best_slack;
-  logic [TENANT_IDX_WIDTH-1:0] cand;
-  integer                      i;
-  integer                      offset;
+  // pairwise comparator. 4-6 logic levels worst case.
+  function automatic cand_t pairwise(
+    input cand_t                       a,
+    input cand_t                       b,
+    input logic [TENANT_IDX_WIDTH-1:0] rr
+  );
+    cand_t                       w;
+    logic [TENANT_IDX_WIDTH-1:0] dist_a;
+    logic [TENANT_IDX_WIDTH-1:0] dist_b;
 
+    dist_a = a.tid - rr;
+    dist_b = b.tid - rr;
+
+    if (!a.valid)               w = b;
+    else if (!b.valid)          w = a;
+    else if (a.prio  < b.prio)  w = a;
+    else if (b.prio  < a.prio)  w = b;
+    else if (a.slack < b.slack) w = a;
+    else if (b.slack < a.slack) w = b;
+    else if (dist_a  < dist_b)  w = a;
+    else                        w = b;
+
+    return w;
+  endfunction
+
+  // ---------------------------------------------------------------------------
+  // Build 8 leaf candidates combinationally from the qmgr inputs.
+  // ---------------------------------------------------------------------------
+  cand_t                       leaf [0:MAX_TENANTS-1];
   always_comb begin
-    best_found = 1'b0;
-    best_idx   = '0;
-    best_prio  = 4'hF;
-    best_slack = 32'hFFFFFFFF;
-
-    for (offset = 0; offset < MAX_TENANTS; offset = offset + 1) begin
-      // Walk tenants starting from rr_ptr to enforce round-robin tie-break.
-      cand = (rr_ptr + offset[TENANT_IDX_WIDTH-1:0]) % MAX_TENANTS;
-      if (deq_valid[cand]) begin
-        logic [3:0]  c_prio;
-        logic [31:0] c_slack;
-        c_prio  = deq_req[cand].prio;
-        c_slack = deq_req[cand].deadline_cycles;
-
-        if (!best_found ||
-            (c_prio < best_prio) ||
-            ((c_prio == best_prio) && (c_slack < best_slack))) begin
-          best_found = 1'b1;
-          best_idx   = cand;
-          best_prio  = c_prio;
-          best_slack = c_slack;
-        end
-      end
+    for (int t = 0; t < MAX_TENANTS; t++) begin
+      leaf[t].valid = deq_valid[t];
+      leaf[t].prio  = deq_req[t].prio;
+      leaf[t].slack = deq_req[t].deadline_cycles;
+      leaf[t].tid   = t[TENANT_IDX_WIDTH-1:0];
+      leaf[t].req   = deq_req[t];
     end
   end
 
   // ---------------------------------------------------------------------------
-  // Stage-3 output register (the 3rd arbitration pipeline stage).
-  //
-  // The first two stages live inside the queue manager (deq_req_r and
-  // deq_grant_r). This stage caps the path: the combinational winner-mux
-  // output is latched here instead of flowing directly into u_mem. With
-  // retiming_backward = 1 Vivado synth is permitted to pull the inserted
-  // register back through the 42-level mux cone in u_arb, splitting it into
-  // shorter sub-paths.
-  //
-  // Handshake: behaves as a single-stage register slice. The slice accepts
-  // a new selection when its output is empty (sel_valid_q = 0) or when the
-  // consumer is taking the held value this cycle (sel_ready = 1). deq_grant
-  // pulses for exactly one cycle when the slice latches a new selection,
-  // so the qmgr's q_head only advances once per accepted request even if
-  // the slice subsequently stalls.
+  // Round-robin pointer (advances when T3 emits a grant). The same rr_ptr
+  // value is propagated through the pipeline alongside the candidates so
+  // every stage's pairwise uses a consistent tiebreak.
   // ---------------------------------------------------------------------------
+  logic [TENANT_IDX_WIDTH-1:0] rr_ptr;
 
-  (* retiming_backward = 1, retiming_forward = 0 *) logic                       sel_valid_q;
-  (* retiming_backward = 1, retiming_forward = 0 *) kvq_req_t                   sel_req_q;
-  (* retiming_backward = 1, retiming_forward = 0 *) logic [TENANT_IDX_WIDTH-1:0] sel_tid_q;
-  (* retiming_backward = 1, retiming_forward = 0 *) logic [MAX_TENANTS-1:0]     deq_grant_q;
-  (* retiming_backward = 1, retiming_forward = 0 *) logic [3:0]                 best_prio_q;
-  (* retiming_backward = 1, retiming_forward = 0 *) logic [31:0]                best_slack_q;
+  // ---------------------------------------------------------------------------
+  // Pipeline storage
+  //   T1 wave: 4 winners + pipelined rr_ptr
+  //   T2 wave: 2 winners + pipelined rr_ptr
+  //   T3 wave: final winner -> external sel_*_q ports
+  // ---------------------------------------------------------------------------
+  cand_t                       t1_w   [0:3];
+  logic                        t1_valid_q;
+  logic [TENANT_IDX_WIDTH-1:0] t1_rr_q;
 
-  logic accept_new;
-  assign accept_new = !sel_valid_q || sel_ready;
+  cand_t                       t2_w   [0:1];
+  logic                        t2_valid_q;
+  logic [TENANT_IDX_WIDTH-1:0] t2_rr_q;
 
+  cand_t                       t3_w;
+  logic                        sel_valid_q;
+  kvq_req_t                    sel_req_q;
+  logic [TENANT_IDX_WIDTH-1:0] sel_tid_q;
+  logic [MAX_TENANTS-1:0]      deq_grant_q;
+
+  // ---------------------------------------------------------------------------
+  // Backpressure: t3 advances when downstream takes the held grant; t2
+  // advances when t3 is taking; t1 advances when t2 is taking. When the
+  // pipeline stalls (sel_ready = 0 with a held grant), the whole tree
+  // freezes.
+  // ---------------------------------------------------------------------------
+  logic t3_accept;
+  logic t2_accept;
+  logic t1_accept;
+  assign t3_accept = !sel_valid_q || sel_ready;
+  assign t2_accept = !t2_valid_q  || t3_accept;
+  assign t1_accept = !t1_valid_q  || t2_accept;
+
+  // ---------------------------------------------------------------------------
+  // Combinational tournament: produce next-state for each stage from the
+  // previous stage's registered output (or the leaf inputs at T1).
+  // ---------------------------------------------------------------------------
+  cand_t t1_next [0:3];
+  cand_t t2_next [0:1];
+  cand_t t3_next;
+  logic  any_leaf_valid;
+
+  always_comb begin
+    t1_next[0]    = pairwise(leaf[0], leaf[1], rr_ptr);
+    t1_next[1]    = pairwise(leaf[2], leaf[3], rr_ptr);
+    t1_next[2]    = pairwise(leaf[4], leaf[5], rr_ptr);
+    t1_next[3]    = pairwise(leaf[6], leaf[7], rr_ptr);
+    any_leaf_valid = |deq_valid;
+
+    t2_next[0]   = pairwise(t1_w[0], t1_w[1], t1_rr_q);
+    t2_next[1]   = pairwise(t1_w[2], t1_w[3], t1_rr_q);
+
+    t3_next      = pairwise(t2_w[0], t2_w[1], t2_rr_q);
+  end
+
+  // ---------------------------------------------------------------------------
+  // Pipeline registers
+  // ---------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      sel_valid_q  <= 1'b0;
-      sel_req_q    <= '0;
-      sel_tid_q    <= '0;
-      deq_grant_q  <= '0;
-      best_prio_q  <= '0;
-      best_slack_q <= '0;
-    end else begin
-      // Always pulse deq_grant_q for exactly one cycle on the accept edge.
+      // T1
+      for (int i = 0; i < 4; i++) t1_w[i] <= '0;
+      t1_valid_q <= 1'b0;
+      t1_rr_q    <= '0;
+      // T2
+      for (int i = 0; i < 2; i++) t2_w[i] <= '0;
+      t2_valid_q <= 1'b0;
+      t2_rr_q    <= '0;
+      // T3 outputs
+      sel_valid_q <= 1'b0;
+      sel_req_q   <= '0;
+      sel_tid_q   <= '0;
       deq_grant_q <= '0;
-      if (accept_new) begin
-        sel_valid_q <= best_found;
-        if (best_found) begin
-          sel_req_q             <= deq_req[best_idx];
-          sel_tid_q             <= best_idx;
-          deq_grant_q[best_idx] <= 1'b1;
-          best_prio_q           <= best_prio;
-          best_slack_q          <= best_slack;
+      t3_w        <= '0;
+    end else begin
+      // T1 advance
+      if (t1_accept) begin
+        for (int i = 0; i < 4; i++) t1_w[i] <= t1_next[i];
+        t1_valid_q <= any_leaf_valid;
+        t1_rr_q    <= rr_ptr;
+      end
+      // T2 advance
+      if (t2_accept) begin
+        for (int i = 0; i < 2; i++) t2_w[i] <= t2_next[i];
+        t2_valid_q <= t1_valid_q;
+        t2_rr_q    <= t1_rr_q;
+      end
+      // T3 advance: latch the final winner and pulse deq_grant_q for
+      // exactly one cycle when the slice latches a new selection.
+      deq_grant_q <= '0;
+      if (t3_accept) begin
+        t3_w <= t3_next;
+        sel_valid_q <= t2_valid_q && t3_next.valid;
+        if (t2_valid_q && t3_next.valid) begin
+          sel_req_q             <= t3_next.req;
+          sel_tid_q             <= t3_next.tid;
+          deq_grant_q[t3_next.tid] <= 1'b1;
         end
       end
     end
@@ -136,13 +218,14 @@ module kvq_deadline_arbiter
   assign sel_tenant_idx = sel_tid_q;
   assign deq_grant      = deq_grant_q;
 
-  // Round-robin pointer advances on the same condition the slice accepts
-  // a new winner.
+  // ---------------------------------------------------------------------------
+  // rr_ptr: advance when T3 emits a fresh grant.
+  // ---------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       rr_ptr <= '0;
-    end else if (accept_new && best_found) begin
-      rr_ptr <= (best_idx == MAX_TENANTS-1) ? '0 : best_idx + 1'b1;
+    end else if (t3_accept && t2_valid_q && t3_next.valid) begin
+      rr_ptr <= (t3_next.tid == MAX_TENANTS-1) ? '0 : t3_next.tid + 1'b1;
     end
   end
 
