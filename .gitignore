@@ -1,0 +1,8 @@
+build/
+results/synth/synth.log
+results/synth/parts_available.txt
+*.jou
+*.log
+*.backup.*
+*.pb
+xsim.dir/
