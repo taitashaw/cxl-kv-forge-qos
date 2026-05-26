@@ -23,6 +23,29 @@ Pipelining has been applied in three stages over the course of Phase 1.
 unpipelined original (qmgr stage 1 + qmgr stage 2 + tournament T1/T2/T3).
 That is +2 cycles relative to the Phase 1 stage-3-retiming build.
 
+### Phase 2.1: kvq_token_bucket pipelined
+
+The Phase 2 closure surfaced `kvq_token_bucket` as the next bottleneck
+(12-level CARRY8 chain in the saturating refill+clamp+consume cone).
+Phase 2.1 splits the bucket at the refill / consume boundary:
+
+- **Stage 1** (combinational + register): `credit_r + refill_amount`
+  saturated to `burst_credit_limit` -> `refilled_q`. ~6-7 logic levels.
+- **Stage 2** (combinational + register): `refilled_q - consume_amount`
+  saturated to zero -> `credit_r`. ~6-7 logic levels.
+
+Net latency cost: +1 cycle on the refill path and +1 cycle on the
+consume-visibility path. The credit_engine's `want_consume` gating
+sees credit_r 1 cycle later than before; in the worst case this can
+permit 1 extra consume per credit-engine cycle while a fresh refill
+is in flight, but the over-allowance is bounded by the pipeline depth
+(1 cycle) and absorbed by the 200-cycle test windows. XSim regression
+stays 12/12.
+
+`credit_available` is still a single-bit derivative of the registered
+`credit_r`, never of any combinational midpoint - same external
+contract as Phase 2.
+
 ## End-to-end response latency
 
 For a request that enqueues into an empty per-tenant queue and is granted

@@ -4,25 +4,30 @@ This document supplements `rtl_phase1_microarchitecture.md` with build-state
 information that is not RTL-structural: which silicon is targeted, what
 timing closes today, and where the remaining gap is.
 
-## Timing closure status — Phase 2 signoff
+## Timing closure status — Phase 2.1 signoff
 
 | metric | value |
 |---|---|
-| Design clock | **300 MHz (3.333 ns)** on `clk_out1_kvq_phase1_bd_clk_wiz_0_0` |
+| Design clock | **350 MHz (2.857 ns)** on `clk_out1_kvq_phase1_bd_clk_wiz_0_0` |
 | Reference part | **xczu7ev-ffvc1156-2-e** (230k LUTs, largest licensed MPSoC) |
-| Pipeline depth on arbitration path | **5 cycles** (2 in qmgr + 3 in tournament tree) |
+| Pipeline depth, arbitration path | 2 in qmgr + 3 in tournament tree = **5 cycles** |
+| Pipeline depth, bucket | **2 cycles** (refill + consume), Phase 2.1 split |
 | Arbiter architecture | **3-level pairwise tournament tree** (`kvq_deadline_arbiter.sv`) |
-| Synth retiming | enabled |
-| Winning impl strategy | **Performance_NetDelay_high** (from a 4-way sweep) |
-| **Post-route WNS** | **+0.056 ns (MET)** |
+| Synth retiming | enabled (`-global_retiming on`) |
+| Winning impl strategy | **Performance_ExtraTimingOpt** (from the Phase 2.1 4-way sweep) |
+| **Post-route WNS** | **+0.004 ns (MET)** |
 | **Post-route TNS** | **0.000 ns** |
-| **Setup failing endpoints** | **0 / 69,461** |
-| **Achieved Fmax** | **~305.9 MHz** (3.277 ns longest path) |
-| Worst path module | `kvq_token_bucket` (12-level CARRY8 add chain) |
+| **Setup failing endpoints** | **0 / 81,880** |
+| Hold WNS / failing | +0.010 ns / 0 |
+| **Achieved Fmax** | **350 MHz** (2.853 ns longest data-path delay) |
+| Worst-path module | `kvq_token_bucket/g_buckets[*].u_bucket/credit_r` (now between pipeline stages, 6-7 logic levels) |
+| Datapath width / throughput | 256-bit AXIS x 350 MHz = **89.6 Gb/s per stream** (179.2 Gb/s aggregate) |
+| Arbitration-path latency | 10-11 cycles ≈ 28.6 to 31.4 ns |
 | Bitstream | results/impl/kvq_top_wrapper.bit (19.3 MB) |
-| XSim regression | 12/12 PASS |
+| Debug probes | results/impl/kvq_top_wrapper.ltx (121 KB, 111 nets) |
+| XSim regression | 12 / 12 PASS |
 
-This is the **Phase 2 final**. Timing is closed cleanly with margin.
+This is the **Phase 2.1 final**. Timing is closed cleanly with margin; both `.bit` and `.ltx` are on disk.
 
 ### Phase 2: tournament-tree arbiter replaces the 36-level combinational cone
 
@@ -67,14 +72,17 @@ failing path. Lifting Fmax above 350 MHz now requires pipelining
 which is a smaller change than an Agilex port and is the next obvious
 step beyond Phase 2.
 
-### Four-build progression
+### Five-build progression
 
-| build | part | arbiter | WNS | Worst-path levels | Fmax |
+| build | part | arbiter / bucket | WNS | Worst-path levels | Closed-timing Fmax |
 |---|---|---|---|---|---|
-| 2-stage on xczu3eg | xczu3eg | single-cycle 8-way | -9.996 ns @ 400 MHz | 45 | 80 MHz |
-| 2-stage on xczu7ev | xczu7ev | single-cycle 8-way | -9.135 ns @ 400 MHz | 42 | 86 MHz |
-| 3-stage + retiming on xczu7ev | xczu7ev | single-cycle 8-way + post-comb register | -9.177 ns @ 400 MHz | 36 | 86 MHz |
-| **Phase 2 tournament tree on xczu7ev** | **xczu7ev** | **3-level pairwise tree** | **+0.056 ns @ 300 MHz** | **12** | **306 MHz** |
+| 2-stage on xczu3eg | xczu3eg | single-cycle 8-way / combinational bucket | -9.996 ns @ 400 MHz | 45 | 80 MHz |
+| 2-stage on xczu7ev | xczu7ev | single-cycle 8-way / combinational bucket | -9.135 ns @ 400 MHz | 42 | 86 MHz |
+| 3-stage + retiming on xczu7ev | xczu7ev | single-cycle 8-way + post-comb reg / combinational bucket | -9.177 ns @ 400 MHz | 36 | 86 MHz |
+| Phase 2 tournament tree on xczu7ev | xczu7ev | 3-level pairwise tree / combinational bucket | +0.056 ns @ 300 MHz | 12 | 306 MHz |
+| **Phase 2.1 tournament tree + bucket pipeline on xczu7ev** | **xczu7ev** | **3-level tree + 2-stage bucket** | **+0.004 ns @ 350 MHz** | **~7** | **350 MHz** |
+
+The Phase 2.1 jump from 306 → 350 MHz came from a single RTL change in `kvq_token_bucket.sv`: the previously-combinational refill-add-clamp-consume-saturate chain (~12 levels CARRY8 + compare) was split at the refill / consume boundary, with a register stage in the middle. Worst path is now between this register stage and the saturation-compare on either side, well under the 2.857 ns target.
 
 ## How to verify the build
 
