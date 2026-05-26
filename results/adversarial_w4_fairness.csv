@@ -1,0 +1,9 @@
+scheduler,scope,jain_index,n_tenants
+B0 Shared FIFO,all,0.726408,4
+B0 Shared FIFO,standard,0.804731,2
+B1 Priority + Continuous Batching,all,0.585099,4
+B1 Priority + Continuous Batching,standard,0.914554,2
+B2 Chunked Prefill,all,0.464291,4
+B2 Chunked Prefill,standard,0.845672,2
+QoS_CxlKvForge,all,0.494772,4
+QoS_CxlKvForge,standard,0.852925,2
