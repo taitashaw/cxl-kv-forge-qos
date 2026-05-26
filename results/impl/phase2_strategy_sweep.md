@@ -4,9 +4,9 @@ Target: 400 MHz (2.500 ns)
 
 | strategy | progress | WNS (ns) | TNS (ns) | Failing endpoints | Inferred Fmax (MHz) |
 |---|---|---|---|---|---|
-| Performance_Explore | done | -0.712 | -6137.224 | 14909 | 311.3 |
-| Performance_ExploreWithRemap | done | -0.653 | -4537.681 | 15271 | 317.2 |
-| Performance_ExtraTimingOpt | done | -0.699 | -5251.847 | 13640 | 312.6 |
-| Performance_NetDelay_high | done | -0.493 | -3262.907 | 12686 | 334.1 |
+| Performance_Explore | done | -0.521 | -4189.531 | 13880 | 331.0 |
+| Performance_ExploreWithRemap | done | -0.334 | -1379.095 | 9719 | 352.9 |
+| Performance_ExtraTimingOpt | done | -0.192 | -834.045 | 9123 | 371.5 |
+| Performance_NetDelay_high | done | -0.193 | -820.578 | 8546 | 371.3 |
 
-Winning strategy: **Performance_NetDelay_high** (WNS = -0.493 ns, TNS = -3262.907 ns)
+Winning strategy: **Performance_ExtraTimingOpt** (WNS = -0.192 ns, TNS = -834.045 ns)

@@ -23,7 +23,7 @@ if {![file exists $xpr]} {
 
 open_project $xpr
 
-puts "==> Sourcing create_block_design.tcl (BD now targets 300 MHz)"
+puts "==> Sourcing create_block_design.tcl (BD now targets 350 MHz)"
 source [file join $proj_root vivado create_block_design.tcl]
 
 # ---- Synthesis (retiming enabled) ----
@@ -74,13 +74,19 @@ if {[llength $dbg_nets] > 0} {
       incr idx
     }
     puts "==> Debug core attached to $idx probes"
+    # Persist the debug-core wiring to the project's active constraints so
+    # the impl run picks them up. Phase 2.1 trade-off: this pollutes
+    # constraints.xdc with debug net refs; clean re-builds need to revert
+    # vivado/constraints.xdc before re-running. Documented in the report.
+    save_constraints -force
+    puts "==> save_constraints persisted debug core to constraints.xdc"
   }
 }
 
 close_design
 
 # ---- Impl with winning strategy ----
-set winner "Performance_NetDelay_high"
+set winner "Performance_ExtraTimingOpt"
 set winner_run "impl_${winner}"
 
 if {[llength [get_runs -quiet $winner_run]] > 0} {
@@ -117,7 +123,7 @@ foreach line [split $rep "\n"] {
   }
 }
 puts ""
-puts "==> Closure summary at 300 MHz target:"
+puts "==> Closure summary at 350 MHz target:"
 puts "    WNS: $wns ns"
 puts "    TNS: $tns ns"
 puts "    Failing endpoints: $fep"

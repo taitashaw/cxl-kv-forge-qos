@@ -65,7 +65,7 @@ set ps_pl_clk_freq_mhz [expr {double($ps_pl_clk_freq_hz) / 1000000.0}]
 puts "==> PS pl_clk0 freq: $ps_pl_clk_freq_mhz MHz"
 set_property -dict [list \
   CONFIG.PRIM_IN_FREQ                $ps_pl_clk_freq_mhz \
-  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ  {300.000} \
+  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ  {350.000} \
   CONFIG.USE_LOCKED                  {true} \
   CONFIG.USE_RESET                   {true} \
   CONFIG.RESET_PORT                  {resetn} \
