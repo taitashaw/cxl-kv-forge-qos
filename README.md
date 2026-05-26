@@ -22,9 +22,30 @@ Software LLM schedulers operate at millisecond to tens-of-milliseconds granulari
 
 Full closure narrative and four-build progression (Phase 1 → Phase 2.1) in `docs/architecture.md`. Final signoff doc: `results/PHASE2_1_FINAL.md`.
 
+## Visual artifacts
+
+![Integrated block design](docs/block_design/kvq_top_bd.png)
+
+*Integrated block design on xczu7ev: Cortex-A53 PS (`ps_e_0`) drives two AXI SmartConnects — `smartconnect_axil` (PS HPM0_LPD → kvq_top_0 s_axi_lite) and `smartconnect_dma_ctrl` (PS HPM0_FPD → axi_dma_0 control). DMA data plane (`smartconnect_data`) bridges axi_dma_0 MM2S/S2MM streams to PS S_AXI_HP0_FPD. `clk_wiz_0` multiplies PS PL_CLK0 (100 MHz) up to the 350 MHz design clock. PNG generated from the Vivado-exported PDF via pdftocairo at 150 DPI.*
+
+PDF and SVG versions also under `docs/block_design/` for higher-fidelity zoom.
+
+## Visual artifacts — pending
+
+Waveform PNGs for the XSim regression (`docs/waveforms/qos_phase1_bringup.png`, `docs/waveforms/qos_w4_contention.png`) are not yet generated. The render Tcl and shell wrapper are written and committed (`sim/xsim/render_waveform.tcl`, `scripts/render_waveform.sh`); on this host they require `xvfb-run` + Vivado's `xsim --gui` mode to host the wave window so `write_wave_image` can render. That combination didn't return cleanly inside the available time budget for the Phase 2.2 sprint and is held for a follow-up:
+
+```bash
+# When picked up, the existing scripts run like this:
+xvfb-run -a -s "-screen 0 1920x1200x24" bash scripts/render_waveform.sh
+```
+
+Expected outputs: two PNGs, ~2 µs and ~4-6 µs windows of the testbench run that cover reset / first-AXIL-program / first-arrival, and the multi-tenant priority + deadline contention spike (T9 / T10 of the 12-test directed regression).
+
 ## Phase 0
 
 Phase 0 is the Python behavioral model that benchmarks the CXL-KV Forge-QoS scheduler against B0 Shared FIFO, B1 Priority + Continuous Batching, B2 Chunked Prefill (Sarathi-Serve-style), and the QoS_CxlKvForge target. It generates adversarial W4 workload, emits CSV metrics, and renders plots. Phase 0 is the golden reference for Phase 1 RTL behavior. The Phase 0 simulator works in microsecond workload time (`Request.arrival_us` / `service_us`), not in RTL cycles, so Phase 0 plots are independent of RTL Fmax.
+
+All four Phase 0 schedulers complete every queued request within the sim window on a single shared compute server; differentiation is in per-tenant latency (p50 / p95 / p99) and deadline-miss behavior, not in aggregate throughput. The identical 5,668 req/s in `results/adversarial_w4_summary.csv` is mathematically expected — see `results/methodology_audit.md` for the file:line walkthrough.
 
 Run:
 
