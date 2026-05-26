@@ -6,3 +6,4 @@ results/synth/parts_available.txt
 *.backup.*
 *.pb
 xsim.dir/
+debug_probes_*.xdc
