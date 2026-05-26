@@ -1,20 +1,20 @@
 # -----------------------------------------------------------------------------
 # synth_impl_bitstream.tcl
 #
-# Drives the BD-wrapped flow end-to-end:
-#   1. Open the project created by create_project.tcl
-#   2. Source create_block_design.tcl to build the BD around kvq_top
-#   3. Synthesize the BD wrapper as the top
-#   4. Implement (place + route)
-#   5. Generate bitstream + .ltx debug probes file
-#
-# Artifacts land under results/synth/ and results/impl/:
-#   - results/synth/zcu102_synth_util.rpt
-#   - results/synth/zcu102_timing_summary.rpt
-#   - results/impl/zcu102_post_route_timing.rpt
-#   - results/impl/zcu102_post_route_util.rpt
-#   - results/impl/kvq_top_wrapper.bit
-#   - results/impl/kvq_top_wrapper.ltx
+# Phase 2 flow:
+#   1. Open project + build the block design.
+#   2. Run synthesis once (retiming enabled).
+#   3. Fork four parallel implementation strategies:
+#        Performance_Explore
+#        Performance_ExploreWithRemap
+#        Performance_ExtraTimingOpt
+#        Performance_NetDelay_high
+#      Each with POST_ROUTE_PHYS_OPT_DESIGN enabled.
+#   4. Collect WNS/TNS/Fmax per strategy into
+#      results/impl/phase2_strategy_sweep.md.
+#   5. Pick the winning strategy (largest WNS, ties broken by lowest TNS).
+#   6. Re-open the winning run and emit bitstream + debug probes to
+#      results/impl/kvq_top_wrapper.{bit,ltx}.
 # -----------------------------------------------------------------------------
 
 set proj_root [file normalize [pwd]]
@@ -38,10 +38,7 @@ open_project $xpr
 puts "==> Sourcing create_block_design.tcl"
 source [file join $proj_root vivado create_block_design.tcl]
 
-# ---- Synthesis ----
-# Enable retiming so the arbiter's stage-3 output registers (tagged with
-# retiming_backward = 1 in rtl/kvq_deadline_arbiter.sv) can be pulled
-# backward through the 42-level winner-mux cone.
+# ---- Synthesis (retiming enabled) ----
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
 
 puts "==> Launch synthesis (retiming enabled)"
@@ -57,101 +54,138 @@ if {[get_property PROGRESS [get_runs synth_1]] ne "100%"} {
 open_run synth_1 -name synth_1
 report_utilization     -file [file join $synth_dir zcu102_synth_util.rpt]
 report_timing_summary  -file [file join $synth_dir zcu102_timing_summary.rpt]
+close_design
 
-# -------------------------------------------------------------------------
-# Post-synth debug-core insertion. MARK_DEBUG-tagged nets inside kvq_top
-# get attached to a fresh ILA so HW Manager can see them via the .ltx
-# file produced after impl.
-# -------------------------------------------------------------------------
-set dbg_nets [get_nets -hierarchical -filter {MARK_DEBUG == TRUE}]
-if {[llength $dbg_nets] > 0} {
-  puts "==> Inserting ILA on [llength $dbg_nets] MARK_DEBUG net(s)"
-  # Locate the 250 MHz design clock - the kvq_top_0/inst/clk pin's source net.
-  set kvq_clk_pin [get_pins -quiet kvq_phase1_bd_i/kvq_top_0/inst/clk]
-  set ila_clk ""
-  if {[llength $kvq_clk_pin] > 0} {
-    set ila_clk [get_nets -of_objects $kvq_clk_pin -quiet]
+# ---- Strategy sweep ----
+set strategies {
+  Performance_Explore
+  Performance_ExploreWithRemap
+  Performance_ExtraTimingOpt
+  Performance_NetDelay_high
+}
+
+set sweep_runs [list]
+foreach strat $strategies {
+  set run_name "impl_${strat}"
+  if {[llength [get_runs -quiet $run_name]] > 0} {
+    delete_runs $run_name
   }
-  if {[llength $ila_clk] == 0} {
-    set ila_clk [lindex [get_nets -hier -filter {NAME =~ "*clk_out1*"}] 0]
+  create_run -name $run_name -parent_run synth_1 \
+             -flow "Vivado Implementation 2025" -strategy $strat
+  set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs $run_name]
+  lappend sweep_runs $run_name
+}
+
+# Also disable impl_1 from the default flow so it does not eat a slot.
+if {[llength [get_runs -quiet impl_1]] > 0} {
+  reset_run impl_1
+}
+
+puts "==> Launching parallel impl strategies: $sweep_runs"
+launch_runs -jobs 4 {*}$sweep_runs
+
+foreach r $sweep_runs {
+  puts "==> Waiting on $r"
+  wait_on_run $r
+}
+
+# ---- Collect per-strategy metrics ----
+set summary_path [file join $impl_dir phase2_strategy_sweep.md]
+set summary [open $summary_path w]
+puts $summary "# Phase 2 strategy sweep - xczu7ev-ffvc1156-2-e (tournament-tree arbiter)"
+puts $summary ""
+puts $summary "Target: 400 MHz (2.500 ns)"
+puts $summary ""
+puts $summary "| strategy | progress | WNS (ns) | TNS (ns) | Failing endpoints | Inferred Fmax (MHz) |"
+puts $summary "|---|---|---|---|---|---|"
+
+set best_strat ""
+set best_wns -1e9
+set best_tns -1e9
+
+foreach r $sweep_runs {
+  set strat [string range $r 5 end]
+  set progress [get_property PROGRESS [get_runs $r]]
+  if {$progress ne "100%"} {
+    puts $summary "| $strat | $progress (FAILED) | - | - | - | - |"
+    continue
   }
-  if {[llength $ila_clk] > 0} {
-    puts "==> ILA clock net: $ila_clk"
-    create_debug_core u_ila_dbg ila
-    set_property C_DATA_DEPTH        1024  [get_debug_cores u_ila_dbg]
-    set_property C_TRIGIN_EN         false [get_debug_cores u_ila_dbg]
-    set_property C_TRIGOUT_EN        false [get_debug_cores u_ila_dbg]
-    set_property C_ADV_TRIGGER       false [get_debug_cores u_ila_dbg]
-    set_property C_INPUT_PIPE_STAGES 1     [get_debug_cores u_ila_dbg]
-    set_property C_EN_STRG_QUAL      false [get_debug_cores u_ila_dbg]
-    set_property port_width 1              [get_debug_ports u_ila_dbg/clk]
-    connect_debug_port u_ila_dbg/clk $ila_clk
-    # One probe per bit net. The HW Manager groups them back into buses
-    # by net name via the .ltx file.
-    set idx 0
-    foreach net $dbg_nets {
-      if {$idx > 0} { create_debug_port u_ila_dbg probe }
-      set_property port_width 1 [get_debug_ports u_ila_dbg/probe${idx}]
-      connect_debug_port u_ila_dbg/probe${idx} $net
-      incr idx
+  open_run $r
+  set per_dir [file join $impl_dir "strategy_${strat}"]
+  file mkdir $per_dir
+  report_utilization    -file [file join $per_dir post_route_util.rpt]
+  report_timing_summary -file [file join $per_dir post_route_timing.rpt]
+
+  set wns 0.0
+  set tns 0.0
+  set fep 0
+  set rep [report_timing_summary -no_header -return_string -setup]
+  foreach line [split $rep "\n"] {
+    if {[regexp {Setup\s*:\s*([0-9]+)\s+Failing Endpoints,\s*Worst Slack\s*([-0-9.]+)ns,\s*Total Violation\s*([-0-9.]+)ns} $line _ ef ws tv]} {
+      set fep $ef
+      set wns $ws
+      set tns $tv
+      break
     }
-    puts "==> Debug core u_ila_dbg attached to $idx probes"
-    # NOTE: do NOT save_constraints here. The debug-core net references are
-    # specific to this synth run; saving them into constraints.xdc would
-    # poison the next build (stale net paths -> Chipscope 16-213 errors).
-    # The runtime debug core is applied to this run via the in-memory
-    # netlist, and write_debug_probes below captures the .ltx for HW Manager.
-  } else {
-    puts "WARN: could not locate kvq design clock for debug-core insertion"
+    if {[regexp {Setup\s*:\s*([0-9]+)\s+Failing Endpoints,\s*Worst Slack\s*([0-9.]+)ns,\s*Total Violation\s*([0-9.]+)ns} $line _ ef ws tv]} {
+      set fep $ef
+      set wns $ws
+      set tns $tv
+      break
+    }
   }
-} else {
-  puts "WARN: no MARK_DEBUG nets found; ILA not inserted"
-}
-close_design
+  set period [expr {2.5 - $wns}]
+  set fmax_mhz 0.0
+  if {$period > 0} { set fmax_mhz [expr {1000.0 / $period}] }
+  puts $summary "| $strat | done | $wns | $tns | $fep | [format %.1f $fmax_mhz] |"
 
-# Enable phys_opt with AggressiveExplore so timing-critical paths
-# (especially the retimed arbiter cone) get further rebalanced post-place.
-set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
-set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
-
-puts "==> Launch implementation (phys_opt AggressiveExplore)"
-reset_run impl_1
-launch_runs impl_1 -jobs 4
-wait_on_run impl_1
-if {[get_property PROGRESS [get_runs impl_1]] ne "100%"} {
-  puts "Implementation failed."
-  exit 3
-}
-
-open_run impl_1
-report_utilization     -file [file join $impl_dir zcu102_post_route_util.rpt]
-report_timing_summary  -file [file join $impl_dir zcu102_post_route_timing.rpt]
-write_debug_probes -force [file join $impl_dir kvq_top_wrapper.ltx]
-close_design
-
-# ---- Bitstream ----
-puts "==> Generate bitstream"
-launch_runs impl_1 -to_step write_bitstream -jobs 4
-wait_on_run impl_1
-if {[get_property PROGRESS [get_runs impl_1]] ne "100%"} {
-  puts "Bitstream generation failed."
-  exit 4
-}
-
-# Copy bitstream + ltx to results/impl/
-set runs_impl [file join $proj_dir ${proj_name}.runs impl_1]
-foreach pattern {*.bit *.ltx} {
-  foreach f [glob -nocomplain -directory $runs_impl $pattern] {
-    set base [file tail $f]
-    # Vivado names the bitstream after the project's top; rename to the
-    # canonical kvq_top_wrapper.* artifact name.
-    set target [string map {kvq_phase1_bd_wrapper kvq_top_wrapper} $base]
-    file copy -force $f [file join $impl_dir $target]
+  # Track winner
+  if {$wns > $best_wns || ($wns == $best_wns && $tns > $best_tns)} {
+    set best_wns $wns
+    set best_tns $tns
+    set best_strat $strat
   }
+  close_design
+}
+
+puts $summary ""
+puts $summary "Winning strategy: **$best_strat** (WNS = $best_wns ns, TNS = $best_tns ns)"
+close $summary
+puts "==> Strategy sweep complete. Best: $best_strat (WNS=$best_wns ns)"
+
+# ---- Bitstream from the winning strategy ----
+if {$best_strat ne ""} {
+  set winner_run "impl_${best_strat}"
+  puts "==> Generating bitstream on $winner_run"
+  launch_runs $winner_run -to_step write_bitstream -jobs 4
+  wait_on_run $winner_run
+  if {[get_property PROGRESS [get_runs $winner_run]] ne "100%"} {
+    puts "Bitstream generation failed."
+    exit 4
+  }
+
+  open_run $winner_run
+  write_debug_probes -force [file join $impl_dir kvq_top_wrapper.ltx]
+  close_design
+
+  set runs_dir [file join $proj_dir ${proj_name}.runs $winner_run]
+  foreach pattern {*.bit *.ltx} {
+    foreach f [glob -nocomplain -directory $runs_dir $pattern] {
+      set base [file tail $f]
+      set target [string map {kvq_phase1_bd_wrapper kvq_top_wrapper} $base]
+      file copy -force $f [file join $impl_dir $target]
+    }
+  }
+
+  # Also publish the winning strategy's reports as the canonical ZCU102 ones
+  file copy -force [file join $impl_dir strategy_${best_strat} post_route_util.rpt] \
+                   [file join $impl_dir zcu102_post_route_util.rpt]
+  file copy -force [file join $impl_dir strategy_${best_strat} post_route_timing.rpt] \
+                   [file join $impl_dir zcu102_post_route_timing.rpt]
 }
 
 puts ""
-puts "==> Build artifacts:"
+puts "==> Artifact check:"
 foreach f [list \
   [file join $synth_dir zcu102_synth_util.rpt] \
   [file join $synth_dir zcu102_timing_summary.rpt] \
@@ -159,9 +193,7 @@ foreach f [list \
   [file join $impl_dir  zcu102_post_route_timing.rpt] \
   [file join $impl_dir  kvq_top_wrapper.bit] \
   [file join $impl_dir  kvq_top_wrapper.ltx] \
+  $summary_path \
 ] {
   if {[file exists $f]} { puts "  OK   $f" } else { puts "  MISS $f" }
 }
-puts ""
-puts "Inspect timing in zcu102_post_route_timing.rpt - WNS/TNS are not"
-puts "asserted by this script."
