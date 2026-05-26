@@ -1,9 +1,37 @@
+# Vivado build outputs and scratch
 build/
-results/synth/synth.log
-results/synth/parts_available.txt
+.Xil/
+**/.Xil/
+xsim.dir/
+**/xsim.dir/
+*.wdb
 *.jou
 *.log
-*.backup.*
 *.pb
-xsim.dir/
+*.backup.*
+vivado*.jou
+vivado*.log
+vivado_pid*.str
+clockInfo.txt
+cong/
+iter_*_CongestedCLBsAndNets.txt
 debug_probes_*.xdc
+
+# Build script intermediate outputs (keep the canonical post-route .rpt/.bit/.ltx
+# under results/ as portfolio artifacts; gitignore only the raw synth.log)
+results/synth/synth.log
+results/synth/parts_available.txt
+
+# Python
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
