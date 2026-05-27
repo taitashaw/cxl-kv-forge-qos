@@ -1,27 +1,26 @@
 # -----------------------------------------------------------------------------
 # render_waveform.tcl
-#
-# Sourced inside `xsim --gui tb_kvq_top --tclbatch <this>`. The xsim --gui
-# session loads the elaborated snapshot, applies wave_config.wcfg via
-# open_wave_config, runs the simulation to completion, then exports two PNG
-# time-window images.
-#
-# The testbench $finishes at ~7us (tb_kvq_top.sv:413), so the windows the
-# Phase 2.2 spec asked for (0-5us, 50-60us) are scaled proportionally:
-#   bringup:    0-2us   (reset deassert, AXI4-Lite contract prog, first req)
-#   contention: 4-6us   (T9 TWO_TENANT_PRIORITY_ORDER + T10 EARLIEST_DEADLINE_FIRST)
+# Sourced inside `xsim --gui tb_kvq_top --tclbatch <this>` from any CWD.
+# Loads wave_config.wcfg, runs sim to $finish (~7.14us), exports two PNGs.
 # -----------------------------------------------------------------------------
 
-set out_dir   [file normalize [file join [pwd] .. .. docs waveforms]]
+set script_dir [file normalize [file dirname [info script]]]
+set proj_root  [file normalize [file join $script_dir .. ..]]
+set wcfg_path  [file join $script_dir wave_config.wcfg]
+set out_dir    [file join $proj_root docs waveforms]
+
 file mkdir $out_dir
 set bringup_png    [file join $out_dir qos_phase1_bringup.png]
 set contention_png [file join $out_dir qos_w4_contention.png]
 
-puts "==> Applying wave_config.wcfg"
-catch { open_wave_config wave_config.wcfg } err
+puts "==> Applying $wcfg_path"
+catch { open_wave_config $wcfg_path } err
 if {$err ne ""} { puts "INFO: open_wave_config returned: $err" }
 
-puts "==> Running simulation to $finish"
+# Belt-and-braces: log everything before running, in case wcfg doesn't auto-log
+catch { log_wave -recursive / }
+
+puts {==> Running simulation to $finish}
 run all
 
 puts "==> Writing $bringup_png  (0us to 2us)"
