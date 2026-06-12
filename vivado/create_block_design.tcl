@@ -63,9 +63,16 @@ connect_bd_net [get_bd_pins $ps/pl_clk0] [get_bd_pins $clkwiz/clk_in1]
 set ps_pl_clk_freq_hz [get_property CONFIG.FREQ_HZ [get_bd_pins $ps/pl_clk0]]
 set ps_pl_clk_freq_mhz [expr {double($ps_pl_clk_freq_hz) / 1000000.0}]
 puts "==> PS pl_clk0 freq: $ps_pl_clk_freq_mhz MHz"
+# PRIM_SOURCE No_buffer: clk_in1 is an internal BD net from the PS, not a
+# chip pin. With the default pin-source config Vivado 2025.2 emits an input
+# IBUF that opt_design later removes as undriven, which disconnects the MMCM
+# input and silently DROPS the generated output clock - the whole fabric
+# domain then times unconstrained (observed 2026-06-12: WNS read +15.6 ns
+# against a 2.5 ns target before this was caught).
 set_property -dict [list \
+  CONFIG.PRIM_SOURCE                 {No_buffer} \
   CONFIG.PRIM_IN_FREQ                $ps_pl_clk_freq_mhz \
-  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ  {350.000} \
+  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ  {400.000} \
   CONFIG.USE_LOCKED                  {true} \
   CONFIG.USE_RESET                   {true} \
   CONFIG.RESET_PORT                  {resetn} \

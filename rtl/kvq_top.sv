@@ -158,14 +158,51 @@ module kvq_top
   logic [QUEUE_OCC_WIDTH-1:0] per_tenant_occ [0:MAX_TENANTS-1];
   logic                    soft_reset;
 
+  // ---- Phase 2.2: registered enqueue crossing (credit engine -> queue mgr) --
+  // The Phase 2.1 400 MHz worst path was credit_engine.credit_r ->
+  // queue_manager.q_mem write-enable: 8 logic levels but 72% routing
+  // (1.796 ns of 2.499 ns) -- a long cross-module net, not logic depth.
+  // A forward register slice on the {valid, req, max_depth} beat splits that
+  // net across two clock periods. The slice holds a captured beat until the
+  // queue manager accepts it (enq_ready high), so it is correct under
+  // arbitrary downstream backpressure -- even though today's queue manager
+  // never stalls (its enq_ready is !enq_valid || enq_accept ||
+  // enq_reject_full, structurally constant high). The beat lands one cycle
+  // later (QoS-tolerated +1 cycle). enq_max_depth is captured with the beat
+  // so the request is still checked against its own tenant's contract, not
+  // the following request's. soft_reset flushes the slice in step with the
+  // queue manager so no stale beat enqueues after a flush.
+  logic                    qm_enq_ready;
+  logic                    enqp_valid;
+  kvq_req_t                enqp_req;
+  logic [15:0]             enqp_max_depth;
+
+  assign ce_out_ready = !enqp_valid || qm_enq_ready;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      enqp_valid     <= 1'b0;
+      enqp_req       <= '0;
+      enqp_max_depth <= '0;
+    end else if (soft_reset) begin
+      enqp_valid     <= 1'b0;
+    end else if (ce_out_valid && ce_out_ready) begin
+      enqp_valid     <= 1'b1;
+      enqp_req       <= ce_out_req;
+      enqp_max_depth <= lookup_contract.max_queue_depth;
+    end else if (qm_enq_ready) begin
+      enqp_valid     <= 1'b0;
+    end
+  end
+
   kvq_per_tenant_queue_manager u_qmgr (
     .clk                   (clk),
     .rst_n                 (rst_n),
     .soft_reset            (soft_reset),
-    .enq_valid             (ce_out_valid),
-    .enq_ready             (ce_out_ready),
-    .enq_req               (ce_out_req),
-    .enq_max_depth         (lookup_contract.max_queue_depth),
+    .enq_valid             (enqp_valid),
+    .enq_ready             (qm_enq_ready),
+    .enq_req               (enqp_req),
+    .enq_max_depth         (enqp_max_depth),
     .full_err_valid        (qm_full_err_valid),
     .full_err_req          (qm_full_err_req),
     .deq_valid             (qm_deq_valid),

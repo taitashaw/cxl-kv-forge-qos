@@ -145,6 +145,24 @@ module kvq_deadline_arbiter
   assign t1_accept = !t1_valid_q  || t2_accept;
 
   // ---------------------------------------------------------------------------
+  // Wave-admission interlock (Phase 2.2). The tree is pipelined, but the
+  // leaves re-sample the (still un-popped) queue heads every cycle, so one
+  // head could ride several overlapping waves and grant more than once -
+  // each stale grant pops a successor entry while presenting the old
+  // request's data. Measured in XSim before this fix: 2 queued beats ->
+  // 4 grants, head request issued 4x, successor request never issued.
+  // Admit a new wave only when no wave is in flight anywhere in the tree
+  // AND the queue manager's registered head readout has refreshed after the
+  // last grant (deq_grant -> deq_grant_r -> q_head/q_count -> stage-A
+  // register = 3 cycles). Aggregate grant rate drops to ~1 per 6 cycles,
+  // absorbed entirely by the single-issue memory engine downstream.
+  // ---------------------------------------------------------------------------
+  logic [1:0] head_refresh_cnt;
+  logic       wave_admit_ok;
+  assign wave_admit_ok = !t1_valid_q && !t2_valid_q && !sel_valid_q
+                         && (head_refresh_cnt == 2'd0);
+
+  // ---------------------------------------------------------------------------
   // Combinational tournament: produce next-state for each stage from the
   // previous stage's registered output (or the leaf inputs at T1).
   // ---------------------------------------------------------------------------
@@ -186,11 +204,15 @@ module kvq_deadline_arbiter
       deq_grant_q <= '0;
       t3_w        <= '0;
     end else begin
-      // T1 advance
+      // T1 advance (gated by the wave-admission interlock)
       if (t1_accept) begin
-        for (int i = 0; i < 4; i++) t1_w[i] <= t1_next[i];
-        t1_valid_q <= any_leaf_valid;
-        t1_rr_q    <= rr_ptr;
+        if (wave_admit_ok) begin
+          for (int i = 0; i < 4; i++) t1_w[i] <= t1_next[i];
+          t1_valid_q <= any_leaf_valid;
+          t1_rr_q    <= rr_ptr;
+        end else begin
+          t1_valid_q <= 1'b0;
+        end
       end
       // T2 advance
       if (t2_accept) begin
@@ -217,6 +239,13 @@ module kvq_deadline_arbiter
   assign sel_req        = sel_req_q;
   assign sel_tenant_idx = sel_tid_q;
   assign deq_grant      = deq_grant_q;
+
+  // Head-refresh window after each grant (see wave-admission interlock).
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)                                          head_refresh_cnt <= '0;
+    else if (t3_accept && t2_valid_q && t3_next.valid)   head_refresh_cnt <= 2'd3;
+    else if (head_refresh_cnt != 2'd0)                   head_refresh_cnt <= head_refresh_cnt - 1'b1;
+  end
 
   // ---------------------------------------------------------------------------
   // rr_ptr: advance when T3 emits a fresh grant.

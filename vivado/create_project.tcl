@@ -56,8 +56,14 @@ set rtl_files [list \
 
 add_files -norecurse $rtl_files
 
-# Constraints
+# Constraints. constraints.xdc is 100% debug-core insertion (create_debug_core
+# u_ila_dbg + 111 probe connections) - it contains no clocks or IO constraints.
+# It stays DISABLED for timing-measurement builds so the sweep measures the
+# bare datapath under the same conditions as the Phase 2.1/2.2 baselines (whose
+# committed post-route reports contain no dbg_hub). The in-memory closure flow
+# (closure_inmem.tcl) is the path that inserts the debug core for bring-up.
 add_files -fileset constrs_1 -norecurse [file join $viv_dir constraints.xdc]
+set_property IS_ENABLED false [get_files [file join $viv_dir constraints.xdc]]
 
 foreach f [get_files *.sv] {
   set_property file_type "SystemVerilog" $f

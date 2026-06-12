@@ -25,7 +25,13 @@ module kvq_assertions
   input  logic                            s_axil_wvalid,
   input  logic                            s_axil_bvalid,
   input  logic                            s_axil_arvalid,
-  input  logic                            s_axil_rvalid
+  input  logic                            s_axil_rvalid,
+
+  // Phase 2.2: credit->queue-manager register-slice beat (internal probe,
+  // wired hierarchically from tb_kvq_top into kvq_top's enqueue crossing)
+  input  logic                            enq_valid,
+  input  logic                            enq_ready,
+  input  kvq_req_t                        enq_req
 );
 
   // AXIS request data must be stable while valid && !ready
@@ -75,5 +81,17 @@ module kvq_assertions
   endproperty
   a_axil_r: assert property (p_axil_r_follows) else
     $error("kvq_assert: rvalid did not follow ar within 64 cycles");
+
+  // Phase 2.2 forward register slice on the credit->queue-manager crossing:
+  // a beat presented to the queue manager must hold, unmutated, until the
+  // cycle after enq_ready accepts it. Phase 1's queue manager never deasserts
+  // enq_ready, so this is vacuous under normal stimulus; the
+  // ENQ_CROSSING_BACKPRESSURE_INJECT test forces a stall window to exercise it.
+  property p_enq_slice_stable;
+    @(posedge clk) disable iff (!rst_n)
+      (enq_valid && !enq_ready) |=> (enq_valid && $stable(enq_req));
+  endproperty
+  a_enq_slice_stable: assert property (p_enq_slice_stable) else
+    $error("kvq_assert: enq beat dropped or mutated while enq_ready low");
 
 endmodule : kvq_assertions

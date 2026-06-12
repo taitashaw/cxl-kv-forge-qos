@@ -134,7 +134,10 @@ module tb_kvq_top;
     .s_axil_wvalid      (s_axil_wvalid),
     .s_axil_bvalid      (s_axil_bvalid),
     .s_axil_arvalid     (s_axil_arvalid),
-    .s_axil_rvalid      (s_axil_rvalid)
+    .s_axil_rvalid      (s_axil_rvalid),
+    .enq_valid          (u_dut.enqp_valid),
+    .enq_ready          (u_dut.qm_enq_ready),
+    .enq_req            (u_dut.enqp_req)
   );
 
   // ---------------------------------------------------------------------------
@@ -222,6 +225,14 @@ module tb_kvq_top;
   logic [31:0] rd_val;
   bit ok;
   kvq_resp_t r_obs;
+
+  // T13 backpressure-injection bookkeeping
+  kvq_req_t r2;
+  kvq_req_t bp_snap;
+  bit bp_captured, bp_held, bp_stalled, ok2;
+  bit bp_slice2, bp_mon_stop;
+  int bp_grants0, bp_issue0, bp_issue1;
+  bit drv2_done;
 
   initial begin
     // Init
@@ -394,6 +405,77 @@ module tb_kvq_top;
     repeat (10) @(posedge clk);
     axil_read(16'h010, rd_val);         // TOTAL_REQUESTS
     record(current_test, (rd_val == 0), $sformatf("total=%0d", rd_val));
+
+    // -------------------------------------------------------------------------
+    // T13: ENQ_CROSSING_BACKPRESSURE_INJECT
+    // The Phase 2.2 forward register slice on the credit->qmgr crossing must
+    // hold a captured beat, without drop or mutation, if the consumer stalls.
+    // Phase 1's queue manager never deasserts enq_ready (structurally constant
+    // high: !enq_valid || enq_accept || enq_reject_full), so a stalling
+    // consumer is emulated by forcing the interface idle from both sides:
+    // ready low toward the slice, valid low toward the queue manager. Forcing
+    // ready alone would be wrong - the queue manager consumes any presented
+    // beat every cycle, so it would enqueue duplicates rather than stall.
+    // -------------------------------------------------------------------------
+    current_test = "ENQ_CROSSING_BACKPRESSURE_INJECT";
+    // Exact-once monitor: count arbiter grants for tenant 0 and how many
+    // times each request id is issued on the response interface. The
+    // acceptance criteria below demand 2 grants / 1 issue per request -
+    // this is the check that exposed the pre-interlock dequeue hazard
+    // (4 grants, first request issued 4x, second never).
+    bp_slice2 = 0; bp_mon_stop = 0;
+    bp_grants0 = 0; bp_issue0 = 0; bp_issue1 = 0;
+    fork
+      while (!bp_mon_stop) begin
+        @(posedge clk);
+        if (u_dut.enqp_valid && u_dut.enqp_req.request_id == 16'h5001) bp_slice2 = 1;
+        if (u_dut.arb_deq_grant[0]) bp_grants0++;
+        if (m_axis_resp_tvalid && m_axis_resp_tready) begin
+          if (unpack_resp(m_axis_resp_tdata).request_id == 16'h5000) bp_issue0++;
+          if (unpack_resp(m_axis_resp_tdata).request_id == 16'h5001) bp_issue1++;
+        end
+      end
+    join_none
+    force u_dut.qm_enq_ready     = 1'b0;
+    force u_dut.u_qmgr.enq_valid = 1'b0;
+    // First write flows into the (empty) slice and must be captured and held.
+    r = make_req(KVQ_OP_WRITE, 16'h5000, 16'h0000, 64'h0000_0000_0000_0070, 4'd1, 32'd1000);
+    u_drv.drive_req(pack_req(r));
+    bp_captured = 1'b0;
+    for (int i = 0; i < 50; i++) begin
+      @(posedge clk);
+      if (u_dut.enqp_valid) begin bp_captured = 1'b1; break; end
+    end
+    bp_snap = u_dut.enqp_req;
+    // Second write queues behind the stalled slice; it must backpressure the
+    // credit engine rather than overwrite the held beat.
+    drv2_done = 1'b0;
+    fork
+      begin
+        r2 = make_req(KVQ_OP_WRITE, 16'h5001, 16'h0000, 64'h0000_0000_0000_0080, 4'd1, 32'd1000);
+        u_drv.drive_req(pack_req(r2));
+        drv2_done = 1'b1;
+      end
+    join_none
+    repeat (30) @(posedge clk);
+    bp_held    = u_dut.enqp_valid && (u_dut.enqp_req == bp_snap);
+    bp_stalled = !u_dut.ce_out_ready;
+    release u_dut.qm_enq_ready;
+    release u_dut.u_qmgr.enq_valid;
+    wait (drv2_done);
+    // Both beats must complete with OK status, exactly once each: nothing
+    // dropped, nothing duplicated, exactly one grant per queue entry.
+    wait_for_resp(16'h5000, 400, ok);
+    wait_for_resp(16'h5001, 400, ok2);
+    repeat (40) @(posedge clk); // settle: catch any late duplicate issues
+    bp_mon_stop = 1;
+    record(current_test,
+      bp_captured && bp_held && bp_stalled
+        && ok  && (u_sb.get(16'h5000).status == KVQ_STATUS_OK)
+        && ok2 && (u_sb.get(16'h5001).status == KVQ_STATUS_OK)
+        && (bp_grants0 == 2) && (bp_issue0 == 1) && (bp_issue1 == 1),
+      $sformatf("captured=%0d held=%0d stalled=%0d grants=%0d issue0=%0d issue1=%0d",
+                bp_captured, bp_held, bp_stalled, bp_grants0, bp_issue0, bp_issue1));
 
     // -------------------------------------------------------------------------
     // Summary
