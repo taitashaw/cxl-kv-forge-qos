@@ -87,3 +87,17 @@ Phase 3 (out of scope here): port to Agilex 7 -3 speed grade for further headroo
 - No real CXL endpoint, PCIe hard IP, DDR/HBM controller, or production driver.
 - xczu9eg (ZCU102) remains license-blocked in this Vivado install — closure verified on xczu7ev as the largest licensed alternative.
 - After running Phase 2 / Phase 2.1 closure, `vivado/constraints.xdc` is polluted with debug-net references from the `save_constraints` step. Reset via `git checkout HEAD -- vivado/constraints.xdc` before the next clean rebuild.
+
+---
+
+## Author
+
+**John Bagshaw** -- Founder, [ShawSilicon](https://shawsilicon.ai) | Senior FPGA Design Engineer, 8+ years in production FPGA/RTL design
+
+CXL protocol integration, DDR4 memory controllers, multi-clock domain architectures, AXI4/Avalon-MM interfaces, and production verification on Intel Agilex 7 and AMD Zynq UltraScale+ platforms.
+
+ShawSilicon runs fixed-scope RTL audits and verifies chip engineers on a four-stage technical screen. [shawsilicon.ai](https://shawsilicon.ai)
+
+[![GitHub](https://img.shields.io/badge/GitHub-taitashaw-181717?style=flat-square&logo=github)](https://github.com/taitashaw)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-jotshaw-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/jotshaw/)
+[![Website](https://img.shields.io/badge/Website-shawsilicon.ai-FF6B35?style=flat-square&logo=safari)](https://shawsilicon.ai)
